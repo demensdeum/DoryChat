@@ -12,7 +12,8 @@ import {
     Smile,
     Mic,
     Check,
-    CheckCheck
+    CheckCheck,
+    Trash2
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -338,6 +339,32 @@ export default function ChatView({
                                             {contact.lastMessage}
                                         </p>
                                     </div>
+
+                                    {contact.type === 'room' && (
+                                        <div
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (!confirm("Remove this endpoint?")) return;
+                                                try {
+                                                    const res = await fetch('/api/rooms/leave', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
+                                                    });
+                                                    if (res.ok) {
+                                                        setContacts(prev => prev.filter(c => c.id !== contact.id));
+                                                        if (selectedContact?.id === contact.id) {
+                                                            setSelectedContact(null);
+                                                        }
+                                                    }
+                                                } catch (err) { console.error(err); }
+                                            }}
+                                            className={`p-2 rounded-full hover:bg-red-500/20 group/trash transition-colors ${selectedContact?.id === contact.id ? "text-blue-100 hover:text-white" : "text-zinc-400 hover:text-red-500"
+                                                }`}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </div>
+                                    )}
 
                                     {contact.unread > 0 && (
                                         <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
