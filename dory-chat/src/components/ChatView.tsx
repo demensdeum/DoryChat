@@ -147,8 +147,8 @@ export default function ChatView({
                 {/* Sidebar Header */}
                 <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-transparent z-10">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5 text-white" />
+                        <div className="w-8 h-8 flex items-center justify-center">
+                            <img src="/dory-icon.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="font-bold text-xl tracking-tight">Dory<span className="text-blue-600">Chat</span></h1>
                     </div>
