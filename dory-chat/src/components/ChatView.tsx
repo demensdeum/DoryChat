@@ -477,21 +477,17 @@ export default function ChatView({
                         </div>
                         <h1 className="font-bold text-xl tracking-tight">Dory<span className="text-blue-600">Chat</span></h1>
                     </div>
-                    <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                        <Settings className="w-5 h-5 text-zinc-500" />
-                    </button>
                 </div>
 
                 {/* Search & Actions */}
                 <div className="p-4 space-y-3">
                     <div className="relative group">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
                             placeholder="Enter endpoint code..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
+                            className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-4 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
                         />
                     </div>
 
@@ -620,7 +616,7 @@ export default function ChatView({
                 {!selectedContact ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-slate-50 dark:bg-zinc-950/50">
                         <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
-                            <Search className="w-10 h-10" />
+                            <MessageSquare className="w-10 h-10" />
                         </div>
                         <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Find your friends</h2>
                         <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
@@ -661,16 +657,6 @@ export default function ChatView({
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                                    <Phone className="w-5 h-5" />
-                                </button>
-                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                                    <Video className="w-5 h-5" />
-                                </button>
-                                <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-2" />
-                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                                    <Search className="w-5 h-5" />
-                                </button>
                                 <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
                                     <MoreVertical className="w-5 h-5" />
                                 </button>
