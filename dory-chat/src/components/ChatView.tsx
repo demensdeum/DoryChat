@@ -57,7 +57,7 @@ export default function ChatView({
                     setMessages(data.map((m: any) => ({
                         id: m._id,
                         text: m.text,
-                        time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        time: new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                         isMe: m.senderId === currentUser.id
                     })));
                 }
@@ -97,7 +97,7 @@ export default function ChatView({
                 setMessages(prev => [...prev, {
                     id: savedMsg._id,
                     text: savedMsg.text,
-                    time: new Date(savedMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    time: new Date(savedMsg.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     isMe: true
                 }]);
                 setMessageInput("");
@@ -145,8 +145,8 @@ export default function ChatView({
                                 key={contact.id}
                                 onClick={() => setSelectedContact(contact)}
                                 className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
-                                        ? "bg-blue-600 shadow-md shadow-blue-500/20"
-                                        : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                                    ? "bg-blue-600 shadow-md shadow-blue-500/20"
+                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
                                     }`}
                             >
                                 <div className="relative">
@@ -179,8 +179,8 @@ export default function ChatView({
 
                                 {contact.unread > 0 && (
                                     <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
-                                            ? "bg-white text-blue-600"
-                                            : "bg-blue-600 text-white"
+                                        ? "bg-white text-blue-600"
+                                        : "bg-blue-600 text-white"
                                         }`}>
                                         {contact.unread}
                                     </div>
@@ -262,8 +262,8 @@ export default function ChatView({
                             )}
 
                             <div className={`group relative px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
-                                    ? "bg-blue-600 text-white rounded-br-none"
-                                    : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
+                                ? "bg-blue-600 text-white rounded-br-none"
+                                : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
                                 }`}>
                                 <p>{msg.text}</p>
                                 <span className={`text-[10px] absolute bottom-1 ${msg.isMe ? "right-3 text-blue-100/70" : "left-3 text-zinc-400"
@@ -300,8 +300,8 @@ export default function ChatView({
                         <button
                             onClick={handleSendMessage}
                             className={`p-3 rounded-xl transition-all ${messageInput.trim()
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
-                                    : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
+                                : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
                                 }`}>
                             <Send className="w-5 h-5" />
                         </button>

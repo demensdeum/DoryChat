@@ -26,6 +26,7 @@ const MessageSchema = new Schema<IMessage>({
         type: Date,
         default: Date.now,
         index: true
+        // No "expires" property here - TTL is managed by backend logic
     },
 });
 

@@ -14,6 +14,10 @@ export async function GET(request: Request) {
 
         await connectToDatabase();
 
+        // Cleaning up old messages (Backend Managed TTL)
+        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+        await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
+
         const messages = await Message.find({
             $or: [
                 { senderId: userId, receiverId: contactId },
@@ -38,6 +42,10 @@ export async function POST(request: Request) {
         }
 
         await connectToDatabase();
+
+        // Cleaning up old messages (Backend Managed TTL)
+        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+        await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
 
         const newMessage = await Message.create({
             senderId,
