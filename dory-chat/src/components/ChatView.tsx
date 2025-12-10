@@ -40,6 +40,9 @@ export default function ChatView({
     const [searchQuery, setSearchQuery] = useState("");
     const [copied, setCopied] = useState(false);
     const [isCoolingDown, setIsCoolingDown] = useState(false);
+    const [isCreateCoolingDown, setIsCreateCoolingDown] = useState(false);
+    const [createCooldownSeconds, setCreateCooldownSeconds] = useState(0);
+    const [messageCooldownSeconds, setMessageCooldownSeconds] = useState(0);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -323,7 +326,26 @@ export default function ChatView({
 
     // Handle Create Room
     const handleCreateRoom = async () => {
+        if (isCreateCoolingDown) {
+            alert("Please wait 30 seconds before creating another endpoint.");
+            return;
+        }
+
         try {
+            // Apply Rate Limit
+            setIsCreateCoolingDown(true);
+            setCreateCooldownSeconds(30);
+
+            const interval = setInterval(() => {
+                setCreateCooldownSeconds(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        setIsCreateCoolingDown(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
             // Generate Keys
             const keyPair = await generateKeyPair();
             const publicKey = await exportKey(keyPair.publicKey);
@@ -418,7 +440,18 @@ export default function ChatView({
 
         // Rate Limit
         setIsCoolingDown(true);
-        setTimeout(() => setIsCoolingDown(false), 3000);
+        setMessageCooldownSeconds(3);
+
+        const interval = setInterval(() => {
+            setMessageCooldownSeconds(prev => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setIsCoolingDown(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
 
         try {
             let finalPayload = messageInput;
@@ -581,9 +614,13 @@ export default function ChatView({
                     <div className="flex gap-2">
                         <button
                             onClick={handleCreateRoom}
-                            className="flex-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 py-2 rounded-xl text-xs font-bold hover:bg-blue-200 transition-colors"
+                            disabled={isCreateCoolingDown}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${isCreateCoolingDown
+                                ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
+                                : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200"
+                                }`}
                         >
-                            + Create Endpoint
+                            {isCreateCoolingDown ? `+ Cooldown (${createCooldownSeconds}s)` : "+ Create Endpoint"}
                         </button>
                         <button
                             onClick={handleJoinRoom}
@@ -811,7 +848,7 @@ export default function ChatView({
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && !isCoolingDown && handleSendMessage()}
                                         placeholder={secureConnectionReady
-                                            ? (isCoolingDown ? "Messaging cooldown (3s)..." : "Type a secured message...")
+                                            ? (isCoolingDown ? `Messaging cooldown (${messageCooldownSeconds}s)...` : "Type a secured message...")
                                             : "Waiting for secure connection (2+ participants)..."
                                         }
                                         disabled={!secureConnectionReady || isCoolingDown}
