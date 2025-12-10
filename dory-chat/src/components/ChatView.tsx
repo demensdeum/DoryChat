@@ -92,9 +92,10 @@ export default function ChatView({
                                 const bundle = JSON.parse(m.text);
                                 if (bundle.keys && bundle.iv && bundle.c) {
                                     // E2EE Message
-                                    const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
-                                    if (myPrivPem) {
-                                        const myKey = await importPrivateKey(myPrivPem);
+                                    // Get Private Key from IDB
+                                    const myKey = await getPrivateKey(selectedContact.id);
+
+                                    if (myKey) {
                                         const myEncryptedAesKey = bundle.keys[currentUser.id];
                                         if (myEncryptedAesKey) {
                                             // Decrypt AES Key
@@ -147,6 +148,25 @@ export default function ChatView({
         return () => clearInterval(interval);
     }, [selectedContact, currentUser.id]);
 
+    // Check for Private Key availability (Async)
+    const [privateKeyAvailable, setPrivateKeyAvailable] = useState(false);
+
+    useEffect(() => {
+        const checkKey = async () => {
+            if (!selectedContact || selectedContact.type !== 'room') {
+                setPrivateKeyAvailable(true); // Always true for non-rooms
+                return;
+            }
+            try {
+                const key = await getPrivateKey(selectedContact.id);
+                setPrivateKeyAvailable(!!key);
+            } catch (e) {
+                setPrivateKeyAvailable(false);
+            }
+        };
+        checkKey();
+    }, [selectedContact]);
+
     // Auto-scroll when messages change
     useEffect(() => {
         scrollToBottom();
@@ -181,6 +201,44 @@ export default function ChatView({
             ["encrypt"]
         );
     }
+
+    // --- IndexedDB Helpers ---
+    const openDB = () => {
+        return new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open("DoryChatKeystore", 1);
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                if (!db.objectStoreNames.contains("keys")) {
+                    db.createObjectStore("keys");
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    };
+
+    const storeKey = async (roomId: string, key: CryptoKey) => {
+        const db = await openDB();
+        return new Promise<void>((resolve, reject) => {
+            const tx = db.transaction("keys", "readwrite");
+            const store = tx.objectStore("keys");
+            const req = store.put(key, roomId);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    };
+
+    const getPrivateKey = async (roomId: string): Promise<CryptoKey | undefined> => {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("keys", "readonly");
+            const store = tx.objectStore("keys");
+            const req = store.get(roomId);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    };
+    // --- End IndexedDB Helpers ---
 
     // Simple AES-GCM encryption
     async function encryptMessage(text: string, publicKeyPEM: string) {
@@ -278,9 +336,7 @@ export default function ChatView({
                 const room = await res.json();
 
                 // Store Private Key
-                const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
-                const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
-                localStorage.setItem(`dory_priv_${room._id}`, privPem);
+                await storeKey(room._id, keyPair.privateKey);
 
                 // Add to contacts list seamlessly
                 const newContact = {
@@ -316,9 +372,7 @@ export default function ChatView({
             });
             if (res.ok) {
                 const room = await res.json();
-                const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
-                const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
-                localStorage.setItem(`dory_priv_${room._id}`, privPem);
+                await storeKey(room._id, keyPair.privateKey);
 
                 // Add to contacts list seamlessly
                 const newContact = {
@@ -366,8 +420,8 @@ export default function ChatView({
             if (type === 'room') {
                 // E2EE Logic
                 // 1. Get my Private Key
-                const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
-                if (!myPrivPem) {
+                const myKey = await getPrivateKey(selectedContact.id);
+                if (!myKey) {
                     alert("No Private Key found for this room! You might have cleared your cache.");
                     return;
                 }
@@ -474,24 +528,20 @@ export default function ChatView({
 
 
     // E2EE Status Check
-    const isE2EEReady = () => {
+    const secureConnectionReady = (() => {
         if (!selectedContact) return false;
-        if (selectedContact.type !== 'room') return true; // Direct chats not enforced yet or handled differently
+        if (selectedContact.type !== 'room') return true;
 
-        // 1. Must have Private Key locally
-        const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
-        if (!myPrivPem) return false;
+        // 1. Private Key in IDB? (Async Check State)
+        if (!privateKeyAvailable) return false;
 
-        // 2. Must have at least one other participant (total >= 2)
+        // 2. Participants >= 2
         const participants = selectedContact.participants || [];
         if (participants.length < 2) return false;
 
-        // 3. All participants must have Public Keys
-        const allHaveKeys = participants.every((p: any) => p.publicKey);
-        return allHaveKeys;
-    };
-
-    const secureConnectionReady = isE2EEReady();
+        // 3. All have Public Keys
+        return participants.every((p: any) => p.publicKey);
+    })();
 
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
