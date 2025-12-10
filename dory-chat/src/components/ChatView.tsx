@@ -37,8 +37,6 @@ export default function ChatView({
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -52,60 +50,7 @@ export default function ChatView({
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Search Effect
-    useEffect(() => {
-        if (!searchQuery.trim()) {
-            setSearchResults([]);
-            setIsSearching(false);
-            return;
-        }
 
-        setIsSearching(true);
-        const delayDebounceFn = setTimeout(async () => {
-            try {
-                const res = await fetch(`/api/users/search?q=${searchQuery}&userId=${currentUser.id}`);
-                if (res.ok) {
-                    const results = await res.json();
-                    setSearchResults(results);
-                }
-            } catch (error) {
-                console.error("Search failed", error);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, currentUser.id]);
-
-    const handleAddContact = async (contact: any) => {
-        try {
-            const res = await fetch('/api/contacts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.id, contactId: contact._id })
-            });
-
-            if (res.ok) {
-                const newContact = {
-                    id: contact._id,
-                    name: contact.name,
-                    avatar: contact.avatar,
-                    status: "offline",
-                    lastMessage: "New Contact",
-                    time: "Just now",
-                    unread: 0
-                };
-
-                setContacts(prev => [...prev, newContact]);
-                setSelectedContact(newContact);
-                setSearchQuery(""); // Clear search
-                setSearchResults([]);
-            }
-        } catch (error) {
-            console.error("Failed to add contact", error);
-        }
-    };
 
     // Fetch messages when contact changes
     useEffect(() => {
@@ -218,7 +163,7 @@ export default function ChatView({
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search or enter code..."
+                            placeholder="Enter endpoint code..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
@@ -272,35 +217,10 @@ export default function ChatView({
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                     <div className="px-2">
 
-                        {/* Search Results Section */}
-                        {searchQuery && (
-                            <div className="mb-4">
-                                <h3 className="px-3 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                                    {isSearching ? "Searching..." : "Global Results"}
-                                </h3>
-                                {searchResults.map(result => (
-                                    <button
-                                        key={result._id}
-                                        onClick={() => handleAddContact(result)}
-                                        className="w-full p-2 rounded-xl flex items-center gap-3 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all text-left"
-                                    >
-                                        <img src={result.avatar} alt={result.name} className="w-10 h-10 rounded-full bg-zinc-200" />
-                                        <div>
-                                            <p className="font-medium text-sm">{result.name}</p>
-                                            <p className="text-xs text-blue-500">Click to add</p>
-                                        </div>
-                                    </button>
-                                ))}
-                                {searchResults.length === 0 && !isSearching && (
-                                    <p className="px-3 text-sm text-zinc-500">No users found.</p>
-                                )}
-                                <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-2 mx-3" />
-                            </div>
-                        )}
 
                         {contacts.length === 0 && !searchQuery ? (
                             <div className="p-6 text-center text-zinc-500 italic text-sm">
-                                No contacts yet.<br />Search above to add people!
+                                No endpoints yet.<br />Create or Join one above!
                             </div>
                         ) : (
                             contacts.map((contact) => (
