@@ -603,9 +603,6 @@ export default function ChatView({
                         <p className="text-sm font-semibold truncate text-zinc-900 dark:text-zinc-100">{currentUser.name}</p>
                         <p className="text-[10px] text-zinc-400 truncate" title={sessionId}>ID: {sessionId.slice(0, 8)}...</p>
                     </div>
-                    <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
-                        <Mic className="w-4 h-4 text-zinc-500" />
-                    </button>
                 </div>
             </aside>
 
@@ -618,9 +615,9 @@ export default function ChatView({
                         <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
                             <MessageSquare className="w-10 h-10" />
                         </div>
-                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Find your friends</h2>
+                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Secure Endpoints</h2>
                         <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
-                            Use the sidebar search to find and add people to your contact list.
+                            Create a Private Endpoint or enter a code to Join one. Share your code to start a secure, encrypted chat.
                         </p>
                     </div>
                 ) : (
@@ -657,9 +654,7 @@ export default function ChatView({
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                                    <MoreVertical className="w-5 h-5" />
-                                </button>
+                                {/* Actions Removed */}
                             </div>
                         </header>
 
@@ -709,9 +704,6 @@ export default function ChatView({
                         {/* Chat Input */}
                         <div className="p-4 bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
                             <div className="flex items-center gap-2 max-w-5xl mx-auto">
-                                <button className="p-2.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
-                                    <Plus className="w-5 h-5" />
-                                </button>
 
                                 <div className="flex-1 relative">
                                     <input
@@ -724,12 +716,9 @@ export default function ChatView({
                                             : "Waiting for secure connection (2+ participants)..."
                                         }
                                         disabled={!secureConnectionReady}
-                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady ? 'opacity-50 cursor-not-allowed' : ''
+                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-4 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady ? 'opacity-50 cursor-not-allowed' : ''
                                             }`}
                                     />
-                                    <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                                        <Smile className="w-5 h-5" />
-                                    </button>
                                 </div>
 
                                 <button
