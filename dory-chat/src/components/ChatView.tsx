@@ -33,6 +33,12 @@ export default function ChatView({
     const [selectedContact, setSelectedContact] = useState(contacts[0]);
     const [messageInput, setMessageInput] = useState("");
     const [messages, setMessages] = useState<any[]>([]);
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const currentUser = user || {
@@ -45,13 +51,69 @@ export default function ChatView({
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    // Search Effect
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        const delayDebounceFn = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/users/search?q=${searchQuery}&userId=${currentUser.id}`);
+                if (res.ok) {
+                    const results = await res.json();
+                    setSearchResults(results);
+                }
+            } catch (error) {
+                console.error("Search failed", error);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery, currentUser.id]);
+
+    const handleAddContact = async (contact: any) => {
+        try {
+            const res = await fetch('/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, contactId: contact._id })
+            });
+
+            if (res.ok) {
+                const newContact = {
+                    id: contact._id,
+                    name: contact.name,
+                    avatar: contact.avatar,
+                    status: "offline",
+                    lastMessage: "New Contact",
+                    time: "Just now",
+                    unread: 0
+                };
+
+                setContacts(prev => [...prev, newContact]);
+                setSelectedContact(newContact);
+                setSearchQuery(""); // Clear search
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.error("Failed to add contact", error);
+        }
+    };
+
     // Fetch messages when contact changes
     useEffect(() => {
         if (!selectedContact || !currentUser.id || currentUser.id === 'guest') return;
 
         const fetchMessages = async () => {
             try {
-                const res = await fetch(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}`);
+                const typeParam = selectedContact.type === 'room' ? '&type=room' : '';
+                const res = await fetch(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}${typeParam}`);
                 if (res.ok) {
                     const data = await res.json();
                     setMessages(data.map((m: any) => ({
@@ -85,7 +147,10 @@ export default function ChatView({
             const payload = {
                 senderId: currentUser.id,
                 receiverId: selectedContact.id,
-                text: messageInput
+                text: messageInput,
+                type: selectedContact.type // Pass type to backend if needed, or backend infers. Currently backend handles 'room' via receiverId usually, 
+                // but for fetching we need it. For sending, the standard POST works because we just save sender/receiver.
+                // However, the Room ID is distinct.
             };
 
             const res = await fetch('/api/messages', {
@@ -128,31 +193,6 @@ export default function ChatView({
         };
     };
 
-    if (contacts.length === 0) {
-        return (
-            <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 items-center justify-center font-sans">
-                <div className="text-center space-y-4 max-w-md px-6">
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <MessageSquare className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Welcome to DoryChat!</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                        You are the first one here. To test the chat, <strong>open this page in a new incognito window</strong> (or a different browser) to create a second user.
-                    </p>
-                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm text-left">
-                        <p className="font-semibold mb-2 text-zinc-900 dark:text-zinc-100">Quick Start:</p>
-                        <ol className="list-decimal list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
-                            <li>Copy the URL</li>
-                            <li>Open a New Private/Incognito Window</li>
-                            <li>Paste and Go</li>
-                            <li>You'll see your new user appear here!</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
 
@@ -171,68 +211,145 @@ export default function ChatView({
                     </button>
                 </div>
 
-                {/* Search */}
-                <div className="p-4">
+                {/* Search & Actions */}
+                <div className="p-4 space-y-3">
                     <div className="relative group">
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search messages..."
+                            placeholder="Search or enter code..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
                         />
+                    </div>
+
+                    {/* Room Actions */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const res = await fetch('/api/rooms', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ userId: currentUser.id })
+                                    });
+                                    if (res.ok) {
+                                        const room = await res.json();
+                                        window.location.reload();
+                                    }
+                                } catch (e) { console.error(e); }
+                            }}
+                            className="flex-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 py-2 rounded-xl text-xs font-bold hover:bg-blue-200 transition-colors"
+                        >
+                            + Create Endpoint
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (!searchQuery) return;
+                                try {
+                                    const res = await fetch('/api/rooms/join', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ userId: currentUser.id, code: searchQuery })
+                                    });
+                                    if (res.ok) {
+                                        window.location.reload();
+                                    } else {
+                                        alert("Invalid Code");
+                                    }
+                                } catch (e) { console.error(e); }
+                            }}
+                            className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 py-2 rounded-xl text-xs font-bold hover:bg-zinc-200 transition-colors"
+                        >
+                            Join w/ Code
+                        </button>
                     </div>
                 </div>
 
                 {/* Contacts List */}
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                     <div className="px-2">
-                        {contacts.map((contact) => (
-                            <button
-                                key={contact.id}
-                                onClick={() => setSelectedContact(contact)}
-                                className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
+
+                        {/* Search Results Section */}
+                        {searchQuery && (
+                            <div className="mb-4">
+                                <h3 className="px-3 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                                    {isSearching ? "Searching..." : "Global Results"}
+                                </h3>
+                                {searchResults.map(result => (
+                                    <button
+                                        key={result._id}
+                                        onClick={() => handleAddContact(result)}
+                                        className="w-full p-2 rounded-xl flex items-center gap-3 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all text-left"
+                                    >
+                                        <img src={result.avatar} alt={result.name} className="w-10 h-10 rounded-full bg-zinc-200" />
+                                        <div>
+                                            <p className="font-medium text-sm">{result.name}</p>
+                                            <p className="text-xs text-blue-500">Click to add</p>
+                                        </div>
+                                    </button>
+                                ))}
+                                {searchResults.length === 0 && !isSearching && (
+                                    <p className="px-3 text-sm text-zinc-500">No users found.</p>
+                                )}
+                                <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-2 mx-3" />
+                            </div>
+                        )}
+
+                        {contacts.length === 0 && !searchQuery ? (
+                            <div className="p-6 text-center text-zinc-500 italic text-sm">
+                                No contacts yet.<br />Search above to add people!
+                            </div>
+                        ) : (
+                            contacts.map((contact) => (
+                                <button
+                                    key={contact.id}
+                                    onClick={() => setSelectedContact(contact)}
+                                    className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
                                         ? "bg-blue-600 shadow-md shadow-blue-500/20"
                                         : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                                    }`}
-                            >
-                                <div className="relative">
-                                    <img
-                                        src={contact.avatar}
-                                        alt={contact.name}
-                                        className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-800 object-cover"
-                                    />
-                                    {contact.status === "online" && (
-                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full" />
-                                    )}
-                                </div>
-
-                                <div className="flex-1 text-left min-w-0">
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className={`font-semibold truncate ${selectedContact?.id === contact.id ? "text-white" : "text-zinc-900 dark:text-zinc-100"
-                                            }`}>
-                                            {contact.name}
-                                        </span>
-                                        <span className={`text-xs ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-400"
-                                            }`}>
-                                            {contact.time}
-                                        </span>
+                                        }`}
+                                >
+                                    <div className="relative">
+                                        <img
+                                            src={contact.avatar}
+                                            alt={contact.name}
+                                            className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-800 object-cover"
+                                        />
+                                        {contact.status === "online" && (
+                                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full" />
+                                        )}
                                     </div>
-                                    <p className={`text-sm truncate ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
-                                        }`}>
-                                        {contact.lastMessage}
-                                    </p>
-                                </div>
 
-                                {contact.unread > 0 && (
-                                    <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
+                                    <div className="flex-1 text-left min-w-0">
+                                        <div className="flex justify-between items-center mb-0.5">
+                                            <span className={`font-semibold truncate ${selectedContact?.id === contact.id ? "text-white" : "text-zinc-900 dark:text-zinc-100"
+                                                }`}>
+                                                {contact.name}
+                                            </span>
+                                            <span className={`text-xs ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-400"
+                                                }`}>
+                                                {contact.time}
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm truncate ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
+                                            }`}>
+                                            {contact.lastMessage}
+                                        </p>
+                                    </div>
+
+                                    {contact.unread > 0 && (
+                                        <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
                                             ? "bg-white text-blue-600"
                                             : "bg-blue-600 text-white"
-                                        }`}>
-                                        {contact.unread}
-                                    </div>
-                                )}
-                            </button>
-                        ))}
+                                            }`}>
+                                            {contact.unread}
+                                        </div>
+                                    )}
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -242,7 +359,7 @@ export default function ChatView({
                         <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{currentUser.name}</p>
+                        <p className="text-sm font-semibold truncate text-zinc-900 dark:text-zinc-100">{currentUser.name}</p>
                         <p className="text-[10px] text-zinc-400 truncate" title={sessionId}>ID: {sessionId.slice(0, 8)}...</p>
                     </div>
                     <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
@@ -254,115 +371,125 @@ export default function ChatView({
             {/* Main Chat Area */}
             <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative">
 
-                {/* Chat Header */}
-                <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-bold overflow-hidden">
-                            {selectedContact ? (
-                                <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full bg-zinc-300 animate-pulse" />
-                            )}
+                {/* Chat Header or Empty State */}
+                {!selectedContact ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-slate-50 dark:bg-zinc-950/50">
+                        <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                            <Search className="w-10 h-10" />
                         </div>
-                        <div>
-                            <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                                {selectedContact ? selectedContact.name : "Select a contact"}
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            </h2>
-                            <p className="text-xs text-zinc-500">Active now</p>
-                        </div>
+                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Find your friends</h2>
+                        <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
+                            Use the sidebar search to find and add people to your contact list.
+                        </p>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                            <Phone className="w-5 h-5" />
-                        </button>
-                        <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                            <Video className="w-5 h-5" />
-                        </button>
-                        <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-2" />
-                        <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                            <Search className="w-5 h-5" />
-                        </button>
-                        <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
-                            <MoreVertical className="w-5 h-5" />
-                        </button>
-                    </div>
-                </header>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800 bg-slate-50 dark:bg-black/50">
-                    {/* Date separator */}
-                    <div className="flex justify-center">
-                        <span className="text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full">Today</span>
-                    </div>
-
-                    {messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={`flex gap-3 max-w-3xl w-full ${msg.isMe ? "justify-end ml-auto" : "justify-start"}`}
-                            style={getExpirationStyle(msg.createdAt)}
-                        >
-                            {!msg.isMe && selectedContact && (
-                                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 self-end overflow-hidden">
-                                    <img src={selectedContact.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                    <>
+                        <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-bold overflow-hidden">
+                                    <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
                                 </div>
-                            )}
+                                <div>
+                                    <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                        {selectedContact.name}
+                                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    </h2>
+                                    <p className="text-xs text-zinc-500">Active now</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
+                                    <Phone className="w-5 h-5" />
+                                </button>
+                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
+                                    <Video className="w-5 h-5" />
+                                </button>
+                                <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
+                                    <Search className="w-5 h-5" />
+                                </button>
+                                <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-full text-zinc-500 transition-colors">
+                                    <MoreVertical className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </header>
 
-                            <div className={`group relative px-5 pt-3 pb-6 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
-                                    ? "bg-blue-600 text-white rounded-br-none"
-                                    : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
-                                }`}>
-                                <p>{msg.text}</p>
-                                <span className={`text-[10px] absolute bottom-1 ${msg.isMe ? "right-3 text-blue-100/70" : "left-3 text-zinc-400"
-                                    } flex items-center gap-1`}>
-                                    {msg.time}
-                                    {msg.isMe && (
-                                        <span className="ml-1">
-                                            {msg.status === 'read' || msg.status === 'delivered' ? (
-                                                <CheckCheck className="w-3 h-3" />
-                                            ) : (
-                                                <Check className="w-3 h-3" />
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800 bg-slate-50 dark:bg-black/50">
+                            {/* Date separator */}
+                            <div className="flex justify-center">
+                                <span className="text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full">Today</span>
+                            </div>
+
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`flex gap-3 max-w-3xl w-full ${msg.isMe ? "justify-end ml-auto" : "justify-start"}`}
+                                    style={getExpirationStyle(msg.createdAt)}
+                                >
+                                    {!msg.isMe && selectedContact && (
+                                        <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 self-end overflow-hidden">
+                                            <img src={selectedContact.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
+
+                                    <div className={`group relative px-5 pt-3 pb-6 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
+                                        ? "bg-blue-600 text-white rounded-br-none"
+                                        : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
+                                        }`}>
+                                        <p>{msg.text}</p>
+                                        <span className={`text-[10px] absolute bottom-1 ${msg.isMe ? "right-3 text-blue-100/70" : "left-3 text-zinc-400"
+                                            } flex items-center gap-1`}>
+                                            {msg.time}
+                                            {msg.isMe && (
+                                                <span className="ml-1">
+                                                    {msg.status === 'read' || msg.status === 'delivered' ? (
+                                                        <CheckCheck className="w-3 h-3" />
+                                                    ) : (
+                                                        <Check className="w-3 h-3" />
+                                                    )}
+                                                </span>
                                             )}
                                         </span>
-                                    )}
-                                </span>
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Chat Input */}
+                        <div className="p-4 bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
+                            <div className="flex items-center gap-2 max-w-5xl mx-auto">
+                                <button className="p-2.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                </button>
+
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="text"
+                                        value={messageInput}
+                                        onChange={(e) => setMessageInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                        placeholder="Type a message..."
+                                        className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    />
+                                    <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                                        <Smile className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={handleSendMessage}
+                                    className={`p-3 rounded-xl transition-all ${messageInput.trim()
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
+                                        : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
+                                        }`}>
+                                    <Send className="w-5 h-5" />
+                                </button>
                             </div>
                         </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Chat Input */}
-                <div className="p-4 bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
-                    <div className="flex items-center gap-2 max-w-5xl mx-auto">
-                        <button className="p-2.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
-                            <Plus className="w-5 h-5" />
-                        </button>
-
-                        <div className="flex-1 relative">
-                            <input
-                                type="text"
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Type a message..."
-                                className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            />
-                            <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                                <Smile className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={handleSendMessage}
-                            className={`p-3 rounded-xl transition-all ${messageInput.trim()
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
-                                    : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
-                                }`}>
-                            <Send className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
+                    </>
+                )}
             </main>
 
         </div>

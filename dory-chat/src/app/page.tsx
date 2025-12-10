@@ -38,20 +38,44 @@ export default async function Home() {
         };
       }
 
-      // Fetch other users for contacts list
-      // In a real app, this would be a specific friends list. 
-      // For this MVP, we show the global user base as contacts.
-      const otherUsers = await User.find({ sessionId: { $ne: sessionId } }).sort({ createdAt: -1 }).limit(50);
+      // Fetch my contacts
+      const populatedUser = await User.findOne({ sessionId })
+        .populate('contacts')
+        .populate('rooms')
+        .exec();
 
-      contacts = otherUsers.map(u => ({
-        id: u._id.toString(),
-        name: u.name,
-        avatar: u.avatar,
-        status: "offline", // specific status implementation requires real-time presence
-        lastMessage: "Joined DoryChat",
-        time: u.createdAt.toLocaleDateString(),
-        unread: 0
-      }));
+      if (populatedUser) {
+        contacts = [];
+
+        if (populatedUser.contacts) {
+          contacts.push(...populatedUser.contacts.map((u: any) => ({
+            id: u._id.toString(),
+            name: u.name,
+            avatar: u.avatar,
+            status: "offline",
+            lastMessage: "Start a conversation",
+            time: "",
+            unread: 0,
+            type: 'user'
+          })));
+        }
+
+        if (populatedUser.rooms) {
+          contacts.push(...populatedUser.rooms.map((r: any) => ({
+            id: r._id.toString(),
+            name: r.name || `Room ${r.code}`,
+            avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${r.code}`,
+            status: "online",
+            lastMessage: `Code: ${r.code}`,
+            time: "",
+            unread: 0,
+            type: 'room',
+            code: r.code
+          })));
+        }
+      } else {
+        contacts = [];
+      }
 
     } catch (error) {
       console.error("Database Error:", error);

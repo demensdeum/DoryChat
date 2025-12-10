@@ -5,6 +5,8 @@ export interface IUser extends Document {
     name: string;
     avatar: string;
     createdAt: Date;
+    contacts: mongoose.Types.ObjectId[];
+    rooms: mongoose.Types.ObjectId[];
 }
 
 const UserSchema = new Schema<IUser>({
@@ -22,6 +24,14 @@ const UserSchema = new Schema<IUser>({
         type: String,
         required: true
     },
+    contacts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    rooms: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Room'
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -29,6 +39,10 @@ const UserSchema = new Schema<IUser>({
 });
 
 // Helper to prevent overwriting models during hot reload
+if (process.env.NODE_ENV === 'development' && mongoose.models.User) {
+    delete mongoose.models.User;
+}
+
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;

@@ -8,6 +8,8 @@ export async function GET(request: Request) {
         const userId = searchParams.get("userId");
         const contactId = searchParams.get("contactId");
 
+        const type = searchParams.get("type");
+
         if (!userId || !contactId) {
             return NextResponse.json({ error: "Missing required params" }, { status: 400 });
         }
@@ -17,6 +19,13 @@ export async function GET(request: Request) {
         // Cleanup old messages (Backend Managed TTL)
         const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
         await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
+
+        if (type === 'room') {
+            const messages = await Message.find({
+                receiverId: contactId
+            }).sort({ createdAt: 1 });
+            return NextResponse.json(messages);
+        }
 
         // Mark messages as delivered if I am the receiver
         // Example: I am User A. Contact is User B.
