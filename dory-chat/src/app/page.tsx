@@ -1,11 +1,12 @@
 import ChatView from "@/components/ChatView";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 
 export default async function Home() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get("dory_session")?.value;
+  const headerStore = await headers();
+  const sessionId = cookieStore.get("dory_session")?.value || headerStore.get("x-dory-session") || undefined;
 
   let user = null;
 

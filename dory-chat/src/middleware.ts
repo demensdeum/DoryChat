@@ -1,19 +1,32 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
     // Check if the session cookie exists
-    const sessionCookie = request.cookies.get('dory_session')
+    let sessionId = request.cookies.get('dory_session')?.value;
+    let isNewSession = false;
 
-    if (!sessionCookie) {
+    if (!sessionId) {
         // Generate a new UUID for the session
         // crypto.randomUUID() is supported in Edge Runtime
-        const sessionId = crypto.randomUUID()
+        sessionId = crypto.randomUUID();
+        isNewSession = true;
+    }
 
-        // Create the response
-        const response = NextResponse.next()
+    // Clone headers and add the session ID so Server Components can access it immediately
+    // This is crucial for the very first request where the cookie is not yet in the request
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-dory-session', sessionId);
 
-        // Set the secure cookie
+    // Create the response with the modified request headers
+    const response = NextResponse.next({
+        request: {
+            headers: requestHeaders,
+        },
+    });
+
+    // If it was a new session, set the secure cookie on the response for future requests
+    if (isNewSession) {
         response.cookies.set({
             name: 'dory_session',
             value: sessionId,
@@ -22,12 +35,10 @@ export function middleware(request: NextRequest) {
             sameSite: 'strict', // CSRF protection
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 1 week
-        })
-
-        return response
+        });
     }
 
-    return NextResponse.next()
+    return response;
 }
 
 export const config = {
@@ -41,4 +52,4 @@ export const config = {
          */
         '/((?!api|_next/static|_next/image|favicon.ico).*)',
     ],
-}
+};
