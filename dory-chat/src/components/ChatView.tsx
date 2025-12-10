@@ -10,15 +10,15 @@ import {
     Plus,
     Send,
     Smile,
-    Mic
+    Mic,
+    Check,
+    CheckCheck
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
-// Mock data
-const DEFAULT_CONTACTS = [
-    { id: 1, name: "Alice Freeman", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Alice", status: "online", lastMessage: "Hey! How are you doing?", time: "10:42 AM", unread: 2 },
-    { id: 2, name: "Bob Smith", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Bob", status: "offline", lastMessage: "Can we reschedule?", time: "Yesterday", unread: 0 },
-];
+// Default contacts removed to prevent confusion
+// Use empty array if no contacts provided
+const DEFAULT_CONTACTS: any[] = [];
 
 export default function ChatView({
     sessionId = "Guest",
@@ -59,7 +59,8 @@ export default function ChatView({
                         text: m.text,
                         createdAt: new Date(m.createdAt),
                         time: new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                        isMe: m.senderId === currentUser.id
+                        isMe: m.senderId === currentUser.id,
+                        status: m.status
                     })));
                 }
             } catch (err) {
@@ -100,7 +101,8 @@ export default function ChatView({
                     text: savedMsg.text,
                     createdAt: new Date(savedMsg.createdAt),
                     time: new Date(savedMsg.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                    isMe: true
+                    isMe: true,
+                    status: 'sent'
                 }]);
                 setMessageInput("");
             }
@@ -125,6 +127,31 @@ export default function ChatView({
             animationDelay: `-${elapsed}ms`
         };
     };
+
+    if (contacts.length === 0) {
+        return (
+            <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 items-center justify-center font-sans">
+                <div className="text-center space-y-4 max-w-md px-6">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <MessageSquare className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Welcome to DoryChat!</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        You are the first one here. To test the chat, <strong>open this page in a new incognito window</strong> (or a different browser) to create a second user.
+                    </p>
+                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm text-left">
+                        <p className="font-semibold mb-2 text-zinc-900 dark:text-zinc-100">Quick Start:</p>
+                        <ol className="list-decimal list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
+                            <li>Copy the URL</li>
+                            <li>Open a New Private/Incognito Window</li>
+                            <li>Paste and Go</li>
+                            <li>You'll see your new user appear here!</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
@@ -281,14 +308,23 @@ export default function ChatView({
                                 </div>
                             )}
 
-                            <div className={`group relative px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
+                            <div className={`group relative px-5 pt-3 pb-6 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
                                     ? "bg-blue-600 text-white rounded-br-none"
                                     : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
                                 }`}>
                                 <p>{msg.text}</p>
                                 <span className={`text-[10px] absolute bottom-1 ${msg.isMe ? "right-3 text-blue-100/70" : "left-3 text-zinc-400"
-                                    } opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                    } flex items-center gap-1`}>
                                     {msg.time}
+                                    {msg.isMe && (
+                                        <span className="ml-1">
+                                            {msg.status === 'read' || msg.status === 'delivered' ? (
+                                                <CheckCheck className="w-3 h-3" />
+                                            ) : (
+                                                <Check className="w-3 h-3" />
+                                            )}
+                                        </span>
+                                    )}
                                 </span>
                             </div>
                         </div>

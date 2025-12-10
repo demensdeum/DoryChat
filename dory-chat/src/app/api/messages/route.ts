@@ -14,9 +14,23 @@ export async function GET(request: Request) {
 
         await connectToDatabase();
 
-        // Cleaning up old messages (Backend Managed TTL)
+        // Cleanup old messages (Backend Managed TTL)
         const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
         await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
+
+        // Mark messages as delivered if I am the receiver
+        // Example: I am User A. Contact is User B.
+        // I want to see marks from User B as delivered.
+        // receiverId = UserA, senderId = UserB
+        const updateQuery = { receiverId: userId, senderId: contactId, status: 'sent' };
+        console.log(`[GET Debug] Attempting update with query:`, JSON.stringify(updateQuery));
+
+        const updateResult = await Message.updateMany(
+            updateQuery,
+            { $set: { status: 'delivered' } }
+        );
+
+        console.log(`[GET] User ${userId} fetched chat with ${contactId}. Matched: ${updateResult.matchedCount}, Modified: ${updateResult.modifiedCount}`);
 
         const messages = await Message.find({
             $or: [
@@ -24,6 +38,8 @@ export async function GET(request: Request) {
                 { senderId: contactId, receiverId: userId },
             ],
         }).sort({ createdAt: 1 });
+
+        console.log(`[GET] Found ${messages.length} messages. Sample status: ${messages[messages.length - 1]?.status}`);
 
         return NextResponse.json(messages);
     } catch (error) {
@@ -43,7 +59,7 @@ export async function POST(request: Request) {
 
         await connectToDatabase();
 
-        // Cleaning up old messages (Backend Managed TTL)
+        // Cleanup old messages (Backend Managed TTL)
         const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
         await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
 
@@ -51,7 +67,10 @@ export async function POST(request: Request) {
             senderId,
             receiverId,
             text,
+            status: 'sent'
         });
+
+        console.log(`[POST] User ${senderId} sent message to ${receiverId}: "${text.substring(0, 20)}..."`);
 
         return NextResponse.json(newMessage);
     } catch (error) {
