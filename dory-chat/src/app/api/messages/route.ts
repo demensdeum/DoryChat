@@ -21,6 +21,12 @@ export async function GET(request: Request) {
         await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
 
         if (type === 'room') {
+            // Mark messages in this room as delivered if retrieved by someone other than the sender
+            await Message.updateMany(
+                { receiverId: contactId, senderId: { $ne: userId }, status: 'sent' },
+                { $set: { status: 'delivered' } }
+            );
+
             const messages = await Message.find({
                 receiverId: contactId
             }).sort({ createdAt: 1 });
