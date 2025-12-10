@@ -30,9 +30,21 @@ const MESSAGES = [
     { id: 5, senderId: 99, text: "Awesome, I'll pass that on to the team.", time: "10:35 AM", isMe: true },
 ];
 
-export default function ChatView({ sessionId = "Guest" }: { sessionId?: string }) {
+export default function ChatView({
+    sessionId = "Guest",
+    user
+}: {
+    sessionId?: string;
+    user?: { name: string; avatar: string; id: string } | null;
+}) {
     const [selectedContact, setSelectedContact] = useState(CONTACTS[0]);
     const [messageInput, setMessageInput] = useState("");
+
+    const currentUser = user || {
+        name: "Guest",
+        avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${sessionId}`,
+        id: "guest"
+    };
 
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
@@ -119,9 +131,11 @@ export default function ChatView({ sessionId = "Guest" }: { sessionId?: string }
 
                 {/* User Profile Mini */}
                 <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 shrink-0" />
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 shrink-0 overflow-hidden">
+                        <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">Demens Deum</p>
+                        <p className="text-sm font-semibold truncate">{currentUser.name}</p>
                         <p className="text-[10px] text-zinc-400 truncate" title={sessionId}>ID: {sessionId.slice(0, 8)}...</p>
                     </div>
                     <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
