@@ -39,6 +39,7 @@ export default function ChatView({
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
     const [copied, setCopied] = useState(false);
+    const [isCoolingDown, setIsCoolingDown] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -413,7 +414,11 @@ export default function ChatView({
     // --- End Crypto Helpers ---
 
     const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedContact) return;
+        if (!messageInput.trim() || !selectedContact || isCoolingDown) return;
+
+        // Rate Limit
+        setIsCoolingDown(true);
+        setTimeout(() => setIsCoolingDown(false), 3000);
 
         try {
             let finalPayload = messageInput;
@@ -804,21 +809,21 @@ export default function ChatView({
                                         type="text"
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && handleSendMessage()}
+                                        onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && !isCoolingDown && handleSendMessage()}
                                         placeholder={secureConnectionReady
-                                            ? "Type a secured message..."
+                                            ? (isCoolingDown ? "Messaging cooldown (3s)..." : "Type a secured message...")
                                             : "Waiting for secure connection (2+ participants)..."
                                         }
-                                        disabled={!secureConnectionReady}
-                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-4 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady ? 'opacity-50 cursor-not-allowed' : ''
+                                        disabled={!secureConnectionReady || isCoolingDown}
+                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-4 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady || isCoolingDown ? 'opacity-50 cursor-not-allowed' : ''
                                             }`}
                                     />
                                 </div>
 
                                 <button
                                     onClick={handleSendMessage}
-                                    disabled={!messageInput.trim() || !secureConnectionReady}
-                                    className={`p-3 rounded-xl transition-all ${messageInput.trim() && secureConnectionReady
+                                    disabled={!messageInput.trim() || !secureConnectionReady || isCoolingDown}
+                                    className={`p-3 rounded-xl transition-all ${messageInput.trim() && secureConnectionReady && !isCoolingDown
                                         ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
                                         : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
                                         }`}>
