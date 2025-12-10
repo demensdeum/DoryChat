@@ -417,7 +417,8 @@ export default function ChatView({
                 setSelectedContact(newContact);
                 setSearchQuery(""); // Clear search
             } else {
-                alert("Invalid Code or Room Full");
+                const errorData = await res.json();
+                alert(errorData.error || "Invalid Code or Room Full");
             }
         } catch (e) { console.error(e); }
     };
