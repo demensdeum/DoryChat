@@ -644,7 +644,7 @@ export default function ChatView({
                                     <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                         {selectedContact.name}
                                         {selectedContact.type === 'room' && !secureConnectionReady &&
-                                            <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Waiting for Keys</span>
+                                            <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Waiting for Talker</span>
                                         }
                                         {selectedContact.type === 'room' && secureConnectionReady &&
                                             <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full">E2EE Secure</span>
