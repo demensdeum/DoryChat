@@ -57,6 +57,7 @@ export default function ChatView({
                     setMessages(data.map((m: any) => ({
                         id: m._id,
                         text: m.text,
+                        createdAt: new Date(m.createdAt),
                         time: new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                         isMe: m.senderId === currentUser.id
                     })));
@@ -97,6 +98,7 @@ export default function ChatView({
                 setMessages(prev => [...prev, {
                     id: savedMsg._id,
                     text: savedMsg.text,
+                    createdAt: new Date(savedMsg.createdAt),
                     time: new Date(savedMsg.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     isMe: true
                 }]);
@@ -105,6 +107,23 @@ export default function ChatView({
         } catch (err) {
             console.error("Failed to send", err);
         }
+    };
+
+    // Helper to calculate animation style
+    const getExpirationStyle = (createdAt: Date) => {
+        const TTL = 60 * 1000; // 60 seconds
+        const elapsed = Date.now() - createdAt.getTime();
+
+        // If expired, hidden
+        if (elapsed >= TTL) return { opacity: 0 };
+
+        // Continuous fade out over 60s
+        // Start at opacity 1, end at opacity 0
+        // We "start" the animation in the past based on how old the message is
+        return {
+            animation: `fadeOut ${TTL}ms linear forwards`,
+            animationDelay: `-${elapsed}ms`
+        };
     };
 
     return (
@@ -145,8 +164,8 @@ export default function ChatView({
                                 key={contact.id}
                                 onClick={() => setSelectedContact(contact)}
                                 className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
-                                    ? "bg-blue-600 shadow-md shadow-blue-500/20"
-                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                                        ? "bg-blue-600 shadow-md shadow-blue-500/20"
+                                        : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
                                     }`}
                             >
                                 <div className="relative">
@@ -179,8 +198,8 @@ export default function ChatView({
 
                                 {contact.unread > 0 && (
                                     <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
-                                        ? "bg-white text-blue-600"
-                                        : "bg-blue-600 text-white"
+                                            ? "bg-white text-blue-600"
+                                            : "bg-blue-600 text-white"
                                         }`}>
                                         {contact.unread}
                                     </div>
@@ -254,6 +273,7 @@ export default function ChatView({
                         <div
                             key={msg.id}
                             className={`flex gap-3 max-w-3xl w-full ${msg.isMe ? "justify-end ml-auto" : "justify-start"}`}
+                            style={getExpirationStyle(msg.createdAt)}
                         >
                             {!msg.isMe && selectedContact && (
                                 <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 self-end overflow-hidden">
@@ -262,8 +282,8 @@ export default function ChatView({
                             )}
 
                             <div className={`group relative px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed max-w-[80%] ${msg.isMe
-                                ? "bg-blue-600 text-white rounded-br-none"
-                                : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
+                                    ? "bg-blue-600 text-white rounded-br-none"
+                                    : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-bl-none border border-zinc-100 dark:border-zinc-800"
                                 }`}>
                                 <p>{msg.text}</p>
                                 <span className={`text-[10px] absolute bottom-1 ${msg.isMe ? "right-3 text-blue-100/70" : "left-3 text-zinc-400"
@@ -300,8 +320,8 @@ export default function ChatView({
                         <button
                             onClick={handleSendMessage}
                             className={`p-3 rounded-xl transition-all ${messageInput.trim()
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
-                                : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
+                                    : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
                                 }`}>
                             <Send className="w-5 h-5" />
                         </button>
