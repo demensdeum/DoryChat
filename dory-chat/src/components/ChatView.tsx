@@ -52,24 +52,90 @@ export default function ChatView({
 
 
 
-    // Fetch messages when contact changes
+    // Fetch messages & Room Details when contact changes
     useEffect(() => {
         if (!selectedContact || !currentUser.id || currentUser.id === 'guest') return;
 
         const fetchMessages = async () => {
             try {
+                // If it's a room, refresh its participants (to get new Public Keys)
+                if (selectedContact.type === 'room') {
+                    const roomRes = await fetch(`/api/rooms?roomId=${selectedContact.id}`);
+                    if (roomRes.ok) {
+                        const roomData = await roomRes.json();
+                        // Update the Ref or State silently so we have fresh keys for sending
+                        // We can just mutate current selectedContact for now or update contacts list?
+                        // Mutating local object is risky but state update might trigger loop.
+                        // Better: Update the contacts array and re-select?
+                        // For MVP, just update the selectedContact object in contacts state
+                        setContacts(prev => prev.map(c => {
+                            if (c.id === selectedContact.id) {
+                                return { ...c, participants: roomData.participants };
+                            }
+                            return c;
+                        }));
+                        // Also update the local selectedContact instance to be immediate
+                        selectedContact.participants = roomData.participants;
+                    }
+                }
+
                 const typeParam = selectedContact.type === 'room' ? '&type=room' : '';
                 const res = await fetch(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}${typeParam}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setMessages(data.map((m: any) => ({
-                        id: m._id,
-                        text: m.text,
-                        createdAt: new Date(m.createdAt),
-                        time: new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                        isMe: m.senderId === currentUser.id,
-                        status: m.status
-                    })));
+
+                    const decryptedMessages = await Promise.all(data.map(async (m: any) => {
+                        let text = m.text;
+
+                        if (selectedContact.type === 'room') {
+                            try {
+                                const bundle = JSON.parse(m.text);
+                                if (bundle.keys && bundle.iv && bundle.c) {
+                                    // E2EE Message
+                                    const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
+                                    if (myPrivPem) {
+                                        const myKey = await importPrivateKey(myPrivPem);
+                                        const myEncryptedAesKey = bundle.keys[currentUser.id];
+                                        if (myEncryptedAesKey) {
+                                            // Decrypt AES Key
+                                            const keyBytes = new Uint8Array(myEncryptedAesKey.split(',').map(Number));
+                                            const rawAesKey = await window.crypto.subtle.decrypt(
+                                                { name: "RSA-OAEP" },
+                                                myKey,
+                                                keyBytes
+                                            );
+                                            const aesKey = await window.crypto.subtle.importKey("raw", rawAesKey, { name: "AES-GCM" }, false, ["decrypt"]);
+
+                                            // Decrypt Content
+                                            const content = await window.crypto.subtle.decrypt(
+                                                { name: "AES-GCM", iv: new Uint8Array(bundle.iv) },
+                                                aesKey,
+                                                new Uint8Array(bundle.c)
+                                            );
+                                            text = new TextDecoder().decode(content);
+                                        } else {
+                                            text = "🔒 Unreadable (No Key for You)";
+                                        }
+                                    } else {
+                                        text = "🔒 Locked (Missing Private Key)";
+                                    }
+                                }
+                            } catch (e) {
+                                // Not a JSON bundle or decryption failed, might be old plaintext
+                            }
+                        }
+
+                        return {
+                            id: m._id,
+                            text: text,
+                            createdAt: new Date(m.createdAt),
+                            time: new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                            isMe: m.senderId === currentUser.id,
+                            status: m.status
+                        };
+                    }));
+
+                    setMessages(decryptedMessages);
                 }
             } catch (err) {
                 console.error("Failed to load messages", err);
@@ -86,17 +152,251 @@ export default function ChatView({
         scrollToBottom();
     }, [messages]);
 
+    // --- Crypto Helpers ---
+    async function generateKeyPair() {
+        return window.crypto.subtle.generateKey(
+            {
+                name: "RSA-OAEP",
+                modulusLength: 2048,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: "SHA-256"
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+    }
+
+    async function exportKey(key: CryptoKey) {
+        const exported = await window.crypto.subtle.exportKey("spki", key);
+        return btoa(String.fromCharCode(...new Uint8Array(exported)));
+    }
+
+    async function importPublicKey(pem: string) {
+        const binaryDer = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+        return window.crypto.subtle.importKey(
+            "spki",
+            binaryDer,
+            { name: "RSA-OAEP", hash: "SHA-256" },
+            true,
+            ["encrypt"]
+        );
+    }
+
+    // Simple AES-GCM encryption
+    async function encryptMessage(text: string, publicKeyPEM: string) {
+        try {
+            // 1. Generate AES Key
+            const aesKey = await window.crypto.subtle.generateKey(
+                { name: "AES-GCM", length: 256 },
+                true,
+                ["encrypt", "decrypt"]
+            );
+
+            // 2. Encrypt Text with AES
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const encoder = new TextEncoder();
+            const encryptedContent = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                aesKey,
+                encoder.encode(text)
+            );
+
+            // 3. Encrypt AES Key with RSA Public Key
+            const publicKey = await importPublicKey(publicKeyPEM);
+            const rawAesKey = await window.crypto.subtle.exportKey("raw", aesKey);
+            const encryptedAesKey = await window.crypto.subtle.encrypt(
+                { name: "RSA-OAEP" },
+                publicKey,
+                rawAesKey
+            );
+
+            // 4. Bundle (IV + EncryptedAESKey + EncryptedContent)
+            // Format: JSON string
+            return JSON.stringify({
+                iv: Array.from(iv),
+                k: Array.from(new Uint8Array(encryptedAesKey)),
+                c: Array.from(new Uint8Array(encryptedContent))
+            });
+        } catch (e) {
+            console.error("Encryption failed", e);
+            return null;
+        }
+    }
+
+    // Decrypt
+    // We need our Private Key from storage
+    // AND the message bundle
+    async function decryptMessage(bundle: any, privateKey: CryptoKey) {
+        try {
+            const { iv, k, c } = typeof bundle === 'string' ? JSON.parse(bundle) : bundle;
+
+            // 1. Decrypt AES Key with RSA Private Key
+            const rawAesKey = await window.crypto.subtle.decrypt(
+                { name: "RSA-OAEP" },
+                privateKey,
+                new Uint8Array(k)
+            );
+
+            // 2. Import AES Key
+            const aesKey = await window.crypto.subtle.importKey(
+                "raw",
+                rawAesKey,
+                { name: "AES-GCM" },
+                false,
+                ["decrypt"]
+            );
+
+            // 3. Decrypt Content
+            const decryptedContent = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: new Uint8Array(iv) },
+                aesKey,
+                new Uint8Array(c)
+            );
+
+            return new TextDecoder().decode(decryptedContent);
+        } catch (e) {
+            console.error("Decryption failed", e);
+            return "🔒 Encrypted Message";
+        }
+    }
+
+    // Handle Create Room
+    const handleCreateRoom = async () => {
+        try {
+            // Generate Keys
+            const keyPair = await generateKeyPair();
+            const publicKey = await exportKey(keyPair.publicKey);
+
+            // Create Room
+            const res = await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, publicKey })
+            });
+
+            if (res.ok) {
+                const room = await res.json();
+                // Store Private Key (IDB is better, but localStorage for MVP)
+                // NOTE: Storing non-extractable CryptoKey in IndexDB is standard.
+                // Here we assume exportable/persistable.
+                // We need to export private key to store in localStorage?
+                // Browser crypto keys are complex.
+                // Simplest: Export PKCS8
+                const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+                const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
+                localStorage.setItem(`dory_priv_${room._id}`, privPem);
+
+                window.location.reload();
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleJoinRoom = async () => {
+        if (!searchQuery) return;
+        try {
+            const keyPair = await generateKeyPair();
+            const publicKey = await exportKey(keyPair.publicKey);
+
+            const res = await fetch('/api/rooms/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, code: searchQuery, publicKey })
+            });
+            if (res.ok) {
+                const room = await res.json();
+                const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+                const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
+                localStorage.setItem(`dory_priv_${room._id}`, privPem);
+                window.location.reload();
+            } else {
+                alert("Invalid Code or Room Full");
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    async function importPrivateKey(pem: string) {
+        const binaryDer = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+        return window.crypto.subtle.importKey(
+            "pkcs8",
+            binaryDer,
+            { name: "RSA-OAEP", hash: "SHA-256" },
+            true,
+            ["decrypt"]
+        );
+    }
+
+    // --- End Crypto Helpers ---
+
     const handleSendMessage = async () => {
         if (!messageInput.trim() || !selectedContact) return;
 
         try {
+            let finalPayload = messageInput;
+            let type = selectedContact.type;
+
+            if (type === 'room') {
+                // E2EE Logic
+                // 1. Get my Private Key
+                const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
+                if (!myPrivPem) {
+                    alert("No Private Key found for this room! You might have cleared your cache.");
+                    return;
+                }
+
+                // 2. Identify Participants
+                // We need to encrypt for ALL participants (including self)
+                const participants = selectedContact.participants || [];
+                // Simple logic: Encrypt for everyone in the list
+
+                // Generate AES Key
+                const aesKey = await window.crypto.subtle.generateKey(
+                    { name: "AES-GCM", length: 256 },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+                const rawAesKey = await window.crypto.subtle.exportKey("raw", aesKey);
+
+                // Encrypt Content
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const encoder = new TextEncoder();
+                const encryptedContent = await window.crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    aesKey,
+                    encoder.encode(messageInput)
+                );
+
+                const keys: Record<string, string> = {};
+
+                for (const p of participants) {
+                    if (p.publicKey) {
+                        try {
+                            const pubKey = await importPublicKey(p.publicKey);
+                            const encryptedKey = await window.crypto.subtle.encrypt(
+                                { name: "RSA-OAEP" },
+                                pubKey,
+                                rawAesKey
+                            );
+                            // Map User ID to Encrypted Key
+                            // p.user might be an ID string or object depending on populate
+                            const pId = typeof p.user === 'string' ? p.user : p.user?._id?.toString() || p.user?.toString();
+                            keys[pId] = Array.from(new Uint8Array(encryptedKey)).toString();
+                            // Storing as simple string in JSON is tricky, array is safer to stringify
+                        } catch (e) { console.error("Key encrypt error for", p, e); }
+                    }
+                }
+
+                finalPayload = JSON.stringify({
+                    iv: Array.from(iv),
+                    c: Array.from(new Uint8Array(encryptedContent)),
+                    keys: keys // keys: { "userId": "123,23,0..." }
+                });
+            }
+
             const payload = {
                 senderId: currentUser.id,
                 receiverId: selectedContact.id,
-                text: messageInput,
-                type: selectedContact.type // Pass type to backend if needed, or backend infers. Currently backend handles 'room' via receiverId usually, 
-                // but for fetching we need it. For sending, the standard POST works because we just save sender/receiver.
-                // However, the Room ID is distinct.
+                text: finalPayload,
+                type: selectedContact.type
             };
 
             const res = await fetch('/api/messages', {
@@ -107,9 +407,13 @@ export default function ChatView({
 
             if (res.ok) {
                 const savedMsg = await res.json();
+
+                // For local display, we already know the text, no need to decrypt our own just-sent message
+                // But to be consistent with data structure, we can just push the plaintext
+
                 setMessages(prev => [...prev, {
                     id: savedMsg._id,
-                    text: savedMsg.text,
+                    text: messageInput, // Show plaintext locally
                     createdAt: new Date(savedMsg.createdAt),
                     time: new Date(savedMsg.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                     isMe: true,
@@ -139,12 +443,33 @@ export default function ChatView({
         };
     };
 
+
+    // E2EE Status Check
+    const isE2EEReady = () => {
+        if (!selectedContact) return false;
+        if (selectedContact.type !== 'room') return true; // Direct chats not enforced yet or handled differently
+
+        // 1. Must have Private Key locally
+        const myPrivPem = localStorage.getItem(`dory_priv_${selectedContact.id}`);
+        if (!myPrivPem) return false;
+
+        // 2. Must have at least one other participant (total >= 2)
+        const participants = selectedContact.participants || [];
+        if (participants.length < 2) return false;
+
+        // 3. All participants must have Public Keys
+        const allHaveKeys = participants.every((p: any) => p.publicKey);
+        return allHaveKeys;
+    };
+
+    const secureConnectionReady = isE2EEReady();
+
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
 
             {/* Sidebar */}
             <aside className="w-80 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-950/50 backdrop-blur-xl">
-                {/* Sidebar Header */}
+                {/* ... Sidebar content unchanged ... */}
                 <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-transparent z-10">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 flex items-center justify-center">
@@ -173,39 +498,13 @@ export default function ChatView({
                     {/* Room Actions */}
                     <div className="flex gap-2">
                         <button
-                            onClick={async () => {
-                                try {
-                                    const res = await fetch('/api/rooms', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ userId: currentUser.id })
-                                    });
-                                    if (res.ok) {
-                                        const room = await res.json();
-                                        window.location.reload();
-                                    }
-                                } catch (e) { console.error(e); }
-                            }}
+                            onClick={handleCreateRoom}
                             className="flex-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 py-2 rounded-xl text-xs font-bold hover:bg-blue-200 transition-colors"
                         >
                             + Create Endpoint
                         </button>
                         <button
-                            onClick={async () => {
-                                if (!searchQuery) return;
-                                try {
-                                    const res = await fetch('/api/rooms/join', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ userId: currentUser.id, code: searchQuery })
-                                    });
-                                    if (res.ok) {
-                                        window.location.reload();
-                                    } else {
-                                        alert("Invalid Code");
-                                    }
-                                } catch (e) { console.error(e); }
-                            }}
+                            onClick={handleJoinRoom}
                             className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 py-2 rounded-xl text-xs font-bold hover:bg-zinc-200 transition-colors"
                         >
                             Join w/ Code
@@ -216,7 +515,6 @@ export default function ChatView({
                 {/* Contacts List */}
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                     <div className="px-2">
-
 
                         {contacts.length === 0 && !searchQuery ? (
                             <div className="p-6 text-center text-zinc-500 italic text-sm">
@@ -334,14 +632,32 @@ export default function ChatView({
                         <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-bold overflow-hidden">
-                                    <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
+                                    {selectedContact.type === 'room' ? (
+                                        <div className="text-xs text-center leading-none">
+                                            <span className="block font-bold">RM</span>
+                                        </div>
+                                    ) : (
+                                        <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                         {selectedContact.name}
-                                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        {selectedContact.type === 'room' && !secureConnectionReady &&
+                                            <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Waiting for Keys</span>
+                                        }
+                                        {selectedContact.type === 'room' && secureConnectionReady &&
+                                            <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full">E2EE Secure</span>
+                                        }
+                                        {!secureConnectionReady && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+                                        {secureConnectionReady && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
                                     </h2>
-                                    <p className="text-xs text-zinc-500">Active now</p>
+                                    <p className="text-xs text-zinc-500">
+                                        {selectedContact.type === 'room'
+                                            ? `${selectedContact.participants?.length || 1} Participants`
+                                            : 'Active now'
+                                        }
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -416,9 +732,14 @@ export default function ChatView({
                                         type="text"
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                        placeholder="Type a message..."
-                                        className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                        onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && handleSendMessage()}
+                                        placeholder={secureConnectionReady
+                                            ? "Type a secured message..."
+                                            : "Waiting for secure connection (2+ participants)..."
+                                        }
+                                        disabled={!secureConnectionReady}
+                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady ? 'opacity-50 cursor-not-allowed' : ''
+                                            }`}
                                     />
                                     <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
                                         <Smile className="w-5 h-5" />
@@ -427,7 +748,8 @@ export default function ChatView({
 
                                 <button
                                     onClick={handleSendMessage}
-                                    className={`p-3 rounded-xl transition-all ${messageInput.trim()
+                                    disabled={!messageInput.trim() || !secureConnectionReady}
+                                    className={`p-3 rounded-xl transition-all ${messageInput.trim() && secureConnectionReady
                                         ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
                                         : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
                                         }`}>

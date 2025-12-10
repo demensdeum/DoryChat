@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
         // Remove user from room participants
         await Room.findByIdAndUpdate(roomId, {
-            $pull: { participants: userId }
+            $pull: { participants: { user: userId } }
         });
 
         // Remove room from user's room list

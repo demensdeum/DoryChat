@@ -6,9 +6,9 @@ import User from "@/models/User";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { userId, code } = body;
+        const { userId, code, publicKey } = body;
 
-        if (!userId || !code) {
+        if (!userId || !code || !publicKey) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
@@ -21,16 +21,18 @@ export async function POST(request: Request) {
         }
 
         // Check if user is already a participant
-        const isParticipant = room.participants.some((p: any) => p.toString() === userId);
+        const isParticipant = room.participants.some((p: any) => p.user.toString() === userId);
 
         if (!isParticipant && room.participants.length >= 2) {
             return NextResponse.json({ error: "Room is full (Max 2 participants)" }, { status: 403 });
         }
 
         // Add user to room participants
-        await Room.findByIdAndUpdate(room._id, {
-            $addToSet: { participants: userId }
-        });
+        if (!isParticipant) {
+            await Room.findByIdAndUpdate(room._id, {
+                $push: { participants: { user: userId, publicKey } }
+            });
+        }
 
         // Add room to user's room list
         await User.findByIdAndUpdate(userId, {

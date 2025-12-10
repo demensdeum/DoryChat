@@ -2,7 +2,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 
 export interface IRoom extends Document {
     code: string;
-    participants: mongoose.Types.ObjectId[];
+    participants: { user: mongoose.Types.ObjectId; publicKey: string }[];
     createdAt: Date;
     name?: string; // Optional name, maybe "Room 123456" default
 }
@@ -16,8 +16,8 @@ const RoomSchema = new Schema<IRoom>({
         length: 6
     },
     participants: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
+        user: { type: Schema.Types.ObjectId, ref: 'User' },
+        publicKey: { type: String, required: true }
     }],
     name: {
         type: String

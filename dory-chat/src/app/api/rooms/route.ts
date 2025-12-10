@@ -10,14 +10,37 @@ function generateCode(length: number) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+    return result;
+}
+
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const roomId = searchParams.get('roomId');
+
+        if (!roomId) {
+            return NextResponse.json({ error: "Missing roomId" }, { status: 400 });
+        }
+
+        await connectToDatabase();
+        const room = await Room.findById(roomId).populate('participants.user', 'name avatar');
+
+        if (!room) {
+            return NextResponse.json({ error: "Room not found" }, { status: 404 });
+        }
+
+        return NextResponse.json(room);
+    } catch (error) {
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
 }
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { userId } = body;
+        const { userId, publicKey } = body;
 
-        if (!userId) {
+        if (!userId || !publicKey) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
@@ -33,7 +56,7 @@ export async function POST(request: Request) {
 
         const newRoom = await Room.create({
             code,
-            participants: [userId],
+            participants: [{ user: userId, publicKey }],
             name: `Room ${code}`
         });
 
