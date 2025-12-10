@@ -9,6 +9,7 @@ export default async function Home() {
   const sessionId = cookieStore.get("dory_session")?.value || headerStore.get("x-dory-session") || undefined;
 
   let user = null;
+  let contacts: any[] = [];
 
   if (sessionId) {
     try {
@@ -36,12 +37,29 @@ export default async function Home() {
           id: newUser._id.toString()
         };
       }
+
+      // Fetch other users for contacts list
+      // In a real app, this would be a specific friends list. 
+      // For this MVP, we show the global user base as contacts.
+      const otherUsers = await User.find({ sessionId: { $ne: sessionId } }).sort({ createdAt: -1 }).limit(50);
+
+      contacts = otherUsers.map(u => ({
+        id: u._id.toString(),
+        name: u.name,
+        avatar: u.avatar,
+        status: "offline", // specific status implementation requires real-time presence
+        lastMessage: "Joined DoryChat",
+        time: u.createdAt.toLocaleDateString(),
+        unread: 0
+      }));
+
     } catch (error) {
       console.error("Database Error:", error);
       // Fallback for DB errors
       user = { name: "Guest (Offline)", avatar: "", id: "offline" };
+      contacts = [];
     }
   }
 
-  return <ChatView user={user} sessionId={sessionId} />;
+  return <ChatView user={user} sessionId={sessionId} initialContacts={contacts} />;
 }

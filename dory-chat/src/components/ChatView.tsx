@@ -15,11 +15,9 @@ import {
 import { useState } from "react";
 
 // Mock data
-const CONTACTS = [
+const DEFAULT_CONTACTS = [
     { id: 1, name: "Alice Freeman", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Alice", status: "online", lastMessage: "Hey! How are you doing?", time: "10:42 AM", unread: 2 },
     { id: 2, name: "Bob Smith", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Bob", status: "offline", lastMessage: "Can we reschedule?", time: "Yesterday", unread: 0 },
-    { id: 3, name: "Charlie Davis", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Charlie", status: "online", lastMessage: "Project files attached.", time: "Tuesday", unread: 0 },
-    { id: 4, name: "Design Team", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Felix", status: "online", lastMessage: "Alice: The new mockups look great!", time: "Monday", unread: 5, isGroup: true },
 ];
 
 const MESSAGES = [
@@ -32,12 +30,15 @@ const MESSAGES = [
 
 export default function ChatView({
     sessionId = "Guest",
-    user
+    user,
+    initialContacts = []
 }: {
     sessionId?: string;
     user?: { name: string; avatar: string; id: string } | null;
+    initialContacts?: any[];
 }) {
-    const [selectedContact, setSelectedContact] = useState(CONTACTS[0]);
+    const [contacts, setContacts] = useState(initialContacts.length > 0 ? initialContacts : DEFAULT_CONTACTS);
+    const [selectedContact, setSelectedContact] = useState(contacts[0]);
     const [messageInput, setMessageInput] = useState("");
 
     const currentUser = user || {
@@ -79,11 +80,11 @@ export default function ChatView({
                 {/* Contacts List */}
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
                     <div className="px-2">
-                        {CONTACTS.map((contact) => (
+                        {contacts.map((contact) => (
                             <button
                                 key={contact.id}
                                 onClick={() => setSelectedContact(contact)}
-                                className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact.id === contact.id
+                                className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
                                         ? "bg-blue-600 shadow-md shadow-blue-500/20"
                                         : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
                                     }`}
@@ -101,23 +102,23 @@ export default function ChatView({
 
                                 <div className="flex-1 text-left min-w-0">
                                     <div className="flex justify-between items-center mb-0.5">
-                                        <span className={`font-semibold truncate ${selectedContact.id === contact.id ? "text-white" : "text-zinc-900 dark:text-zinc-100"
+                                        <span className={`font-semibold truncate ${selectedContact?.id === contact.id ? "text-white" : "text-zinc-900 dark:text-zinc-100"
                                             }`}>
                                             {contact.name}
                                         </span>
-                                        <span className={`text-xs ${selectedContact.id === contact.id ? "text-blue-100" : "text-zinc-400"
+                                        <span className={`text-xs ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-400"
                                             }`}>
                                             {contact.time}
                                         </span>
                                     </div>
-                                    <p className={`text-sm truncate ${selectedContact.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
+                                    <p className={`text-sm truncate ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
                                         }`}>
                                         {contact.lastMessage}
                                     </p>
                                 </div>
 
                                 {contact.unread > 0 && (
-                                    <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact.id === contact.id
+                                    <div className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedContact?.id === contact.id
                                             ? "bg-white text-blue-600"
                                             : "bg-blue-600 text-white"
                                         }`}>
@@ -151,11 +152,15 @@ export default function ChatView({
                 <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-bold overflow-hidden">
-                            <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
+                            {selectedContact ? (
+                                <img src={selectedContact.avatar} alt={selectedContact.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-300 animate-pulse" />
+                            )}
                         </div>
                         <div>
                             <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                                {selectedContact.name}
+                                {selectedContact ? selectedContact.name : "Select a contact"}
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             </h2>
                             <p className="text-xs text-zinc-500">Active now</p>
@@ -190,7 +195,7 @@ export default function ChatView({
                             key={msg.id}
                             className={`flex gap-3 max-w-3xl ${msg.isMe ? "ml-auto flex-row-reverse" : ""}`}
                         >
-                            {!msg.isMe && (
+                            {!msg.isMe && selectedContact && (
                                 <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 self-end overflow-hidden">
                                     <img src={selectedContact.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                 </div>
