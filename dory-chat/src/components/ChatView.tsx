@@ -12,7 +12,7 @@ import {
     Smile,
     Mic
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Mock data
 const DEFAULT_CONTACTS = [
@@ -33,11 +33,16 @@ export default function ChatView({
     const [selectedContact, setSelectedContact] = useState(contacts[0]);
     const [messageInput, setMessageInput] = useState("");
     const [messages, setMessages] = useState<any[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const currentUser = user || {
         name: "Guest",
         avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${sessionId}`,
         id: "guest"
+    };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     // Fetch messages when contact changes
@@ -62,10 +67,14 @@ export default function ChatView({
         };
 
         fetchMessages();
-        // Poll for new messages every 3 seconds
         const interval = setInterval(fetchMessages, 3000);
         return () => clearInterval(interval);
     }, [selectedContact, currentUser.id]);
+
+    // Auto-scroll when messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const handleSendMessage = async () => {
         if (!messageInput.trim() || !selectedContact) return;
@@ -244,7 +253,7 @@ export default function ChatView({
                     {messages.map((msg) => (
                         <div
                             key={msg.id}
-                            className={`flex gap-3 max-w-3xl ${msg.isMe ? "ml-auto flex-row-reverse" : ""}`}
+                            className={`flex gap-3 max-w-3xl w-full ${msg.isMe ? "justify-end ml-auto" : "justify-start"}`}
                         >
                             {!msg.isMe && selectedContact && (
                                 <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 self-end overflow-hidden">
@@ -264,6 +273,7 @@ export default function ChatView({
                             </div>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
 
                 {/* Chat Input */}
