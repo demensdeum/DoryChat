@@ -276,17 +276,29 @@ export default function ChatView({
 
             if (res.ok) {
                 const room = await res.json();
-                // Store Private Key (IDB is better, but localStorage for MVP)
-                // NOTE: Storing non-extractable CryptoKey in IndexDB is standard.
-                // Here we assume exportable/persistable.
-                // We need to export private key to store in localStorage?
-                // Browser crypto keys are complex.
-                // Simplest: Export PKCS8
+
+                // Store Private Key
                 const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
                 const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
                 localStorage.setItem(`dory_priv_${room._id}`, privPem);
 
-                window.location.reload();
+                // Add to contacts list seamlessly
+                const newContact = {
+                    id: room._id,
+                    name: `Room ${room.code}`,
+                    avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
+                    status: 'online',
+                    unread: 0,
+                    lastMessage: 'Encryption Enabled',
+                    time: 'Just now',
+                    type: 'room',
+                    code: room.code,
+                    participants: room.participants
+                };
+
+                setContacts(prev => [newContact, ...prev]);
+                setSelectedContact(newContact);
+                setMessageInput(""); // Reset input if any
             }
         } catch (e) { console.error(e); }
     };
@@ -307,7 +319,24 @@ export default function ChatView({
                 const exportedPriv = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
                 const privPem = btoa(String.fromCharCode(...new Uint8Array(exportedPriv)));
                 localStorage.setItem(`dory_priv_${room._id}`, privPem);
-                window.location.reload();
+
+                // Add to contacts list seamlessly
+                const newContact = {
+                    id: room._id,
+                    name: `Room ${room.code}`,
+                    avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
+                    status: 'online',
+                    unread: 0,
+                    lastMessage: 'Encryption Enabled',
+                    time: 'Just now',
+                    type: 'room',
+                    code: room.code,
+                    participants: room.participants
+                };
+
+                setContacts(prev => [newContact, ...prev]);
+                setSelectedContact(newContact);
+                setSearchQuery(""); // Clear search
             } else {
                 alert("Invalid Code or Room Full");
             }
