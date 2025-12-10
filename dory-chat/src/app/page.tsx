@@ -63,7 +63,7 @@ export default async function Home() {
         if (populatedUser.rooms) {
           contacts.push(...populatedUser.rooms.map((r: any) => ({
             id: r._id.toString(),
-            name: r.name || `Room ${r.code}`,
+            name: r.name || `${r.code}`,
             avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${r.code}`,
             status: "online",
             lastMessage: `Code: ${r.code}`,

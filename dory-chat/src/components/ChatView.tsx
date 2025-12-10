@@ -341,7 +341,7 @@ export default function ChatView({
                 // Add to contacts list seamlessly
                 const newContact = {
                     id: room._id,
-                    name: `Room ${room.code}`,
+                    name: `${room.code}`,
                     avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
                     status: 'online',
                     unread: 0,
@@ -377,7 +377,7 @@ export default function ChatView({
                 // Add to contacts list seamlessly
                 const newContact = {
                     id: room._id,
-                    name: `Room ${room.code}`,
+                    name: `${room.code}`,
                     avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
                     status: 'online',
                     unread: 0,
