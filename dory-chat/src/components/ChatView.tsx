@@ -12,20 +12,12 @@ import {
     Smile,
     Mic
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Mock data
 const DEFAULT_CONTACTS = [
     { id: 1, name: "Alice Freeman", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Alice", status: "online", lastMessage: "Hey! How are you doing?", time: "10:42 AM", unread: 2 },
     { id: 2, name: "Bob Smith", avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=Bob", status: "offline", lastMessage: "Can we reschedule?", time: "Yesterday", unread: 0 },
-];
-
-const MESSAGES = [
-    { id: 1, senderId: 1, text: "Hey there! I saw the new designs.", time: "10:30 AM", isMe: false },
-    { id: 2, senderId: 99, text: "Oh, really? What did you think about the color palette?", time: "10:32 AM", isMe: true },
-    { id: 3, senderId: 1, text: "I loved it! It's a definitive improvement.", time: "10:33 AM", isMe: false },
-    { id: 4, senderId: 1, text: "Especially the dark mode contrasts.", time: "10:33 AM", isMe: false },
-    { id: 5, senderId: 99, text: "Awesome, I'll pass that on to the team.", time: "10:35 AM", isMe: true },
 ];
 
 export default function ChatView({
@@ -40,11 +32,70 @@ export default function ChatView({
     const [contacts, setContacts] = useState(initialContacts.length > 0 ? initialContacts : DEFAULT_CONTACTS);
     const [selectedContact, setSelectedContact] = useState(contacts[0]);
     const [messageInput, setMessageInput] = useState("");
+    const [messages, setMessages] = useState<any[]>([]);
 
     const currentUser = user || {
         name: "Guest",
         avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${sessionId}`,
         id: "guest"
+    };
+
+    // Fetch messages when contact changes
+    useEffect(() => {
+        if (!selectedContact || !currentUser.id || currentUser.id === 'guest') return;
+
+        const fetchMessages = async () => {
+            try {
+                const res = await fetch(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setMessages(data.map((m: any) => ({
+                        id: m._id,
+                        text: m.text,
+                        time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        isMe: m.senderId === currentUser.id
+                    })));
+                }
+            } catch (err) {
+                console.error("Failed to load messages", err);
+            }
+        };
+
+        fetchMessages();
+        // Poll for new messages every 3 seconds
+        const interval = setInterval(fetchMessages, 3000);
+        return () => clearInterval(interval);
+    }, [selectedContact, currentUser.id]);
+
+    const handleSendMessage = async () => {
+        if (!messageInput.trim() || !selectedContact) return;
+
+        try {
+            const payload = {
+                senderId: currentUser.id,
+                receiverId: selectedContact.id,
+                text: messageInput
+            };
+
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                const savedMsg = await res.json();
+                setMessages(prev => [...prev, {
+                    id: savedMsg._id,
+                    text: savedMsg.text,
+                    time: new Date(savedMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    isMe: true
+                }]);
+                setMessageInput("");
+            }
+        } catch (err) {
+            console.error("Failed to send", err);
+        }
     };
 
     return (
@@ -190,7 +241,7 @@ export default function ChatView({
                         <span className="text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full">Today</span>
                     </div>
 
-                    {MESSAGES.map((msg) => (
+                    {messages.map((msg) => (
                         <div
                             key={msg.id}
                             className={`flex gap-3 max-w-3xl ${msg.isMe ? "ml-auto flex-row-reverse" : ""}`}
@@ -227,6 +278,7 @@ export default function ChatView({
                                 type="text"
                                 value={messageInput}
                                 onChange={(e) => setMessageInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder="Type a message..."
                                 className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                             />
@@ -235,10 +287,12 @@ export default function ChatView({
                             </button>
                         </div>
 
-                        <button className={`p-3 rounded-xl transition-all ${messageInput.trim()
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
-                                : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
-                            }`}>
+                        <button
+                            onClick={handleSendMessage}
+                            className={`p-3 rounded-xl transition-all ${messageInput.trim()
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-105 active:scale-95"
+                                    : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-400 cursor-not-allowed"
+                                }`}>
                             <Send className="w-5 h-5" />
                         </button>
                     </div>
