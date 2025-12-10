@@ -13,7 +13,8 @@ import {
     Mic,
     Check,
     CheckCheck,
-    Trash2
+    Trash2,
+    Copy
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -37,6 +38,7 @@ export default function ChatView({
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
+    const [copied, setCopied] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -715,6 +717,19 @@ export default function ChatView({
                                 <div>
                                     <h2 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                                         {selectedContact.name}
+                                        {selectedContact.type === 'room' && (
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(selectedContact.code || selectedContact.name);
+                                                    setCopied(true);
+                                                    setTimeout(() => setCopied(false), 2000);
+                                                }}
+                                                className="p-1 text-zinc-400 hover:text-blue-500 transition-colors"
+                                                title="Copy Code"
+                                            >
+                                                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                            </button>
+                                        )}
                                         {selectedContact.type === 'room' && !secureConnectionReady &&
                                             <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Waiting for Talker</span>
                                         }
