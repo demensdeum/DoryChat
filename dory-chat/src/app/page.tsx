@@ -1,10 +1,8 @@
 import ChatView from "@/components/ChatView";
 import { cookies, headers } from "next/headers";
 import connectToDatabase from "@/lib/db";
-// Import Room and Message first, before User, to ensure they're registered
-import Room from "@/models/Room";
-import Message from "@/models/Message";
-import User from "@/models/User";
+// Import all models from centralized registry to ensure proper registration
+import { User } from "@/models";
 
 export default async function Home() {
   const cookieStore = await cookies();
