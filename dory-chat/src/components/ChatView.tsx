@@ -893,10 +893,12 @@ export default function ChatView({
                         <div className="p-4 bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
                             <div className="flex items-center gap-2 max-w-5xl mx-auto">
 
+
                                 <div className="flex-1 relative">
                                     <input
                                         type="text"
                                         value={messageInput}
+                                        maxLength={280}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && !isCoolingDown && handleSendMessage()}
                                         placeholder={secureConnectionReady
@@ -904,9 +906,15 @@ export default function ChatView({
                                             : "Waiting for secure connection (2+ participants)..."
                                         }
                                         disabled={!secureConnectionReady || isCoolingDown}
-                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-4 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady || isCoolingDown ? 'opacity-50 cursor-not-allowed' : ''
+                                        className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-16 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady || isCoolingDown ? 'opacity-50 cursor-not-allowed' : ''
                                             }`}
                                     />
+                                    {messageInput.length > 0 && (
+                                        <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium ${messageInput.length > 250 ? 'text-red-500' : 'text-zinc-400'
+                                            }`}>
+                                            {280 - messageInput.length}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button
