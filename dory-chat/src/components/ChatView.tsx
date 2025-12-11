@@ -49,6 +49,64 @@ export default function ChatView({
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Translations
+    const translations = {
+        en: {
+            appName: 'DoryChat',
+            settings: 'Settings',
+            language: 'Language',
+            english: 'English',
+            russian: 'Русский',
+            enterCode: 'Enter endpoint code...',
+            createEndpoint: 'Create Endpoint',
+            joinWithCode: 'Join w/ Code',
+            noEndpoints: 'No endpoints yet.',
+            createOrJoin: 'Create or Join one above!',
+            secureEndpoints: 'Secure Endpoints',
+            secureEndpointsDesc: 'Create a Private Endpoint or enter a code to Join one. Share your code to start a secure, encrypted chat.',
+            participants: 'Participants',
+            activeNow: 'Active now',
+            today: 'Today',
+            typeMessage: 'Type a secured message...',
+            waitingConnection: 'Waiting for secure connection (2+ participants)...',
+            messagingCooldown: 'Messaging cooldown',
+            waitingForTalker: 'Waiting for Talker',
+            e2eeSecure: 'E2EE Secure',
+            removeEndpoint: 'Remove this endpoint?',
+            cooldown: 'Cooldown',
+            encryptionEnabled: 'Encryption Enabled',
+            id: 'ID'
+        },
+        ru: {
+            appName: 'DoryChat',
+            settings: 'Настройки',
+            language: 'Язык',
+            english: 'English',
+            russian: 'Русский',
+            enterCode: 'Введите код точки...',
+            createEndpoint: '+ Создать точку',
+            joinWithCode: 'Войти по коду',
+            noEndpoints: 'Нет точек.',
+            createOrJoin: 'Создайте или присоединитесь!',
+            secureEndpoints: 'Защищённые точки',
+            secureEndpointsDesc: 'Создайте приватную точку или введите код для присоединения. Поделитесь кодом для начала зашифрованного чата.',
+            participants: 'Участники',
+            activeNow: 'Сейчас активен',
+            today: 'Сегодня',
+            typeMessage: 'Введите сообщение...',
+            waitingConnection: 'Ожидание подключения (2+ участника)...',
+            messagingCooldown: 'Задержка отправки',
+            waitingForTalker: 'Ожидание собеседника',
+            e2eeSecure: 'E2EE защита',
+            removeEndpoint: 'Удалить эту точку?',
+            cooldown: 'Задержка',
+            encryptionEnabled: 'Шифрование включено',
+            id: 'ID'
+        }
+    };
+
+    const t = (key: keyof typeof translations.en) => translations[language][key];
+
     const currentUser = user || {
         name: "Guest",
         avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${sessionId}`,
@@ -615,7 +673,7 @@ export default function ChatView({
                     <div className="relative group">
                         <input
                             type="text"
-                            placeholder="Enter endpoint code..."
+                            placeholder={t('enterCode')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-4 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
@@ -632,13 +690,13 @@ export default function ChatView({
                                 : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200"
                                 }`}
                         >
-                            {isCreateCoolingDown ? `+ Cooldown (${createCooldownSeconds}s)` : "+ Create Endpoint"}
+                            {isCreateCoolingDown ? `+ ${t('cooldown')} (${createCooldownSeconds}s)` : t('createEndpoint')}
                         </button>
                         <button
                             onClick={handleJoinRoom}
                             className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 py-2 rounded-xl text-xs font-bold hover:bg-zinc-200 transition-colors"
                         >
-                            Join w/ Code
+                            {t('joinWithCode')}
                         </button>
                     </div>
                 </div>
@@ -649,7 +707,7 @@ export default function ChatView({
 
                         {contacts.length === 0 && !searchQuery ? (
                             <div className="p-6 text-center text-zinc-500 italic text-sm">
-                                No endpoints yet.<br />Create or Join one above!
+                                {t('noEndpoints')}<br />{t('createOrJoin')}
                             </div>
                         ) : (
                             contacts.map((contact) => (
@@ -800,7 +858,7 @@ export default function ChatView({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h2>
+                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{t('settings')}</h2>
                             <button
                                 onClick={() => setShowSettings(false)}
                                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -812,7 +870,7 @@ export default function ChatView({
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-                                    Language
+                                    {t('language')}
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
@@ -821,11 +879,11 @@ export default function ChatView({
                                             setShowSettings(false);
                                         }}
                                         className={`p-3 rounded-xl font-medium transition-all ${language === 'en'
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                             }`}
                                     >
-                                        🇬🇧 English
+                                        🇬🇧 {t('english')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -833,11 +891,11 @@ export default function ChatView({
                                             setShowSettings(false);
                                         }}
                                         className={`p-3 rounded-xl font-medium transition-all ${language === 'ru'
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                                             }`}
                                     >
-                                        🇷🇺 Русский
+                                        🇷🇺 {t('russian')}
                                     </button>
                                 </div>
                             </div>
