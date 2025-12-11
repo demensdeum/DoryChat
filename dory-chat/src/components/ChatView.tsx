@@ -682,24 +682,72 @@ export default function ChatView({
 
                                     {contact.type === 'room' && (
                                         <div
-                                            onClick={async (e) => {
+                                            onPointerDown={(e) => {
                                                 e.stopPropagation();
-                                                if (!confirm("Remove this endpoint?")) return;
-                                                try {
-                                                    const res = await fetch('/api/rooms/leave', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
-                                                    });
-                                                    if (res.ok) {
-                                                        setContacts(prev => prev.filter(c => c.id !== contact.id));
-                                                        if (selectedContact?.id === contact.id) {
-                                                            setSelectedContact(null);
+                                                const target = e.currentTarget as HTMLElement;
+                                                const startTime = Date.now();
+
+                                                // Visual feedback
+                                                target.style.transform = 'scale(0.9)';
+
+                                                // Store timer on element
+                                                (target as any)._longPressTimer = setTimeout(async () => {
+                                                    // Long press - delete without confirmation
+                                                    try {
+                                                        const res = await fetch('/api/rooms/leave', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
+                                                        });
+                                                        if (res.ok) {
+                                                            setContacts(prev => prev.filter(c => c.id !== contact.id));
+                                                            if (selectedContact?.id === contact.id) {
+                                                                setSelectedContact(null);
+                                                            }
                                                         }
-                                                    }
-                                                } catch (err) { console.error(err); }
+                                                    } catch (err) { console.error(err); }
+                                                    target.style.transform = '';
+                                                }, 2000); // 2 seconds
                                             }}
-                                            className={`p-2 rounded-full hover:bg-red-500/20 group/trash transition-colors ${selectedContact?.id === contact.id ? "text-blue-100 hover:text-white" : "text-zinc-400 hover:text-red-500"
+                                            onPointerUp={async (e) => {
+                                                e.stopPropagation();
+                                                const target = e.currentTarget as HTMLElement;
+
+                                                // Clear timer
+                                                if ((target as any)._longPressTimer) {
+                                                    clearTimeout((target as any)._longPressTimer);
+                                                    (target as any)._longPressTimer = null;
+
+                                                    // Short click - show confirmation
+                                                    if (!confirm("Remove this endpoint?")) {
+                                                        target.style.transform = '';
+                                                        return;
+                                                    }
+                                                    try {
+                                                        const res = await fetch('/api/rooms/leave', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
+                                                        });
+                                                        if (res.ok) {
+                                                            setContacts(prev => prev.filter(c => c.id !== contact.id));
+                                                            if (selectedContact?.id === contact.id) {
+                                                                setSelectedContact(null);
+                                                            }
+                                                        }
+                                                    } catch (err) { console.error(err); }
+                                                }
+                                                target.style.transform = '';
+                                            }}
+                                            onPointerLeave={(e) => {
+                                                const target = e.currentTarget as HTMLElement;
+                                                if ((target as any)._longPressTimer) {
+                                                    clearTimeout((target as any)._longPressTimer);
+                                                    (target as any)._longPressTimer = null;
+                                                }
+                                                target.style.transform = '';
+                                            }}
+                                            className={`p-2 rounded-full hover:bg-red-500/20 group/trash transition-all ${selectedContact?.id === contact.id ? "text-blue-100 hover:text-white" : "text-zinc-400 hover:text-red-500"
                                                 }`}
                                         >
                                             <Trash2 className="w-4 h-4" />
