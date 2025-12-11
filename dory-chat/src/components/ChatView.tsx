@@ -924,6 +924,21 @@ export default function ChatView({
                                 </div>
                             </div>
                         </div>
+
+                        {/* Creator Credit */}
+                        <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 text-center">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                Created by{' '}
+                                <a
+                                    href="https://demensdeum.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                >
+                                    DemensDeum
+                                </a>
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
