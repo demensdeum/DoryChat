@@ -17,6 +17,7 @@ import {
     Copy
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import AgreementModal from './AgreementModal';
 
 // Default contacts removed to prevent confusion
 // Use empty array if no contacts provided
@@ -665,6 +666,7 @@ export default function ChatView({
 
     return (
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
+            <AgreementModal />
 
             {/* Sidebar */}
             <aside className="w-80 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-950/50 backdrop-blur-xl">
