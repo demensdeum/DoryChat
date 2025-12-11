@@ -43,6 +43,7 @@ export default function ChatView({
     const [isCreateCoolingDown, setIsCreateCoolingDown] = useState(false);
     const [createCooldownSeconds, setCreateCooldownSeconds] = useState(0);
     const [messageCooldownSeconds, setMessageCooldownSeconds] = useState(0);
+    const [longPressingContactId, setLongPressingContactId] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -685,14 +686,14 @@ export default function ChatView({
                                             onPointerDown={(e) => {
                                                 e.stopPropagation();
                                                 const target = e.currentTarget as HTMLElement;
-                                                const startTime = Date.now();
 
-                                                // Visual feedback
-                                                target.style.transform = 'scale(0.9)';
+                                                // Start animation
+                                                setLongPressingContactId(contact.id);
 
                                                 // Store timer on element
                                                 (target as any)._longPressTimer = setTimeout(async () => {
                                                     // Long press - delete without confirmation
+                                                    setLongPressingContactId(null);
                                                     try {
                                                         const res = await fetch('/api/rooms/leave', {
                                                             method: 'POST',
@@ -706,51 +707,51 @@ export default function ChatView({
                                                             }
                                                         }
                                                     } catch (err) { console.error(err); }
-                                                    target.style.transform = '';
                                                 }, 2000); // 2 seconds
                                             }}
-                                            onPointerUp={async (e) => {
+                                            onPointerUp={(e) => {
                                                 e.stopPropagation();
                                                 const target = e.currentTarget as HTMLElement;
 
-                                                // Clear timer
+                                                // Clear animation and timer - no deletion on release
+                                                setLongPressingContactId(null);
+
                                                 if ((target as any)._longPressTimer) {
                                                     clearTimeout((target as any)._longPressTimer);
                                                     (target as any)._longPressTimer = null;
-
-                                                    // Short click - show confirmation
-                                                    if (!confirm("Remove this endpoint?")) {
-                                                        target.style.transform = '';
-                                                        return;
-                                                    }
-                                                    try {
-                                                        const res = await fetch('/api/rooms/leave', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
-                                                        });
-                                                        if (res.ok) {
-                                                            setContacts(prev => prev.filter(c => c.id !== contact.id));
-                                                            if (selectedContact?.id === contact.id) {
-                                                                setSelectedContact(null);
-                                                            }
-                                                        }
-                                                    } catch (err) { console.error(err); }
                                                 }
-                                                target.style.transform = '';
                                             }}
                                             onPointerLeave={(e) => {
                                                 const target = e.currentTarget as HTMLElement;
+                                                setLongPressingContactId(null);
                                                 if ((target as any)._longPressTimer) {
                                                     clearTimeout((target as any)._longPressTimer);
                                                     (target as any)._longPressTimer = null;
                                                 }
-                                                target.style.transform = '';
                                             }}
-                                            className={`p-2 rounded-full hover:bg-red-500/20 group/trash transition-all ${selectedContact?.id === contact.id ? "text-blue-100 hover:text-white" : "text-zinc-400 hover:text-red-500"
+                                            className={`relative p-2 rounded-full hover:bg-red-500/20 group/trash transition-all ${selectedContact?.id === contact.id ? "text-blue-100 hover:text-white" : "text-zinc-400 hover:text-red-500"
                                                 }`}
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            {/* Progress ring */}
+                                            {longPressingContactId === contact.id && (
+                                                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 32 32">
+                                                    <circle
+                                                        cx="16"
+                                                        cy="16"
+                                                        r="14"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        className="text-red-500"
+                                                        strokeDasharray="87.96"
+                                                        strokeDashoffset="87.96"
+                                                        style={{
+                                                            animation: 'fillProgress 2s linear forwards'
+                                                        }}
+                                                    />
+                                                </svg>
+                                            )}
+                                            <Trash2 className="w-4 h-4 relative z-10" />
                                         </div>
                                     )}
 

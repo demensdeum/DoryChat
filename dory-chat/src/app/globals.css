@@ -34,3 +34,13 @@ body {
     opacity: 0;
   }
 }
+
+@keyframes fillProgress {
+  from {
+    stroke-dashoffset: 87.96;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
