@@ -46,6 +46,7 @@ export default function ChatView({
     const [longPressingContactId, setLongPressingContactId] = useState<string | null>(null);
     const [showSettings, setShowSettings] = useState(false);
     const [language, setLanguage] = useState<'en' | 'ru'>('en');
+    const [joinError, setJoinError] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +76,9 @@ export default function ChatView({
             removeEndpoint: 'Remove this endpoint?',
             cooldown: 'Cooldown',
             encryptionEnabled: 'Encryption Enabled',
-            id: 'ID'
+            id: 'ID',
+            errorEmptyCode: 'Please enter an endpoint code',
+            errorRoomNotFound: 'Room not found or is full'
         },
         ru: {
             appName: 'DoryChat',
@@ -101,7 +104,9 @@ export default function ChatView({
             removeEndpoint: 'Удалить эту точку?',
             cooldown: 'Задержка',
             encryptionEnabled: 'Шифрование включено',
-            id: 'ID'
+            id: 'ID',
+            errorEmptyCode: 'Введите код точки',
+            errorRoomNotFound: 'Комната не найдена или заполнена'
         }
     };
 
@@ -446,7 +451,15 @@ export default function ChatView({
     };
 
     const handleJoinRoom = async () => {
-        if (!searchQuery) return;
+        // Clear previous error
+        setJoinError(null);
+
+        // Validate input
+        if (!searchQuery || !searchQuery.trim()) {
+            setJoinError(t('errorEmptyCode'));
+            return;
+        }
+
         try {
             const keyPair = await generateKeyPair();
             const publicKey = await exportKey(keyPair.publicKey);
@@ -477,11 +490,14 @@ export default function ChatView({
                 setContacts(prev => [newContact, ...prev]);
                 setSelectedContact(newContact);
                 setSearchQuery(""); // Clear search
+                setJoinError(null); // Clear error
             } else {
-                const errorData = await res.json();
-                alert(errorData.error || "Invalid Code or Room Full");
+                setJoinError(t('errorRoomNotFound'));
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+            setJoinError(t('errorRoomNotFound'));
+        }
     };
 
     async function importPrivateKey(pem: string) {
@@ -675,9 +691,17 @@ export default function ChatView({
                             type="text"
                             placeholder={t('enterCode')}
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setJoinError(null); // Clear error on input change
+                            }}
                             className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl py-2 pl-4 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-zinc-500"
                         />
+                        {joinError && (
+                            <div className="mt-2 text-xs text-red-500 dark:text-red-400 font-medium px-1">
+                                {joinError}
+                            </div>
+                        )}
                     </div>
 
                     {/* Room Actions */}
