@@ -44,6 +44,8 @@ export default function ChatView({
     const [createCooldownSeconds, setCreateCooldownSeconds] = useState(0);
     const [messageCooldownSeconds, setMessageCooldownSeconds] = useState(0);
     const [longPressingContactId, setLongPressingContactId] = useState<string | null>(null);
+    const [showSettings, setShowSettings] = useState(false);
+    const [language, setLanguage] = useState<'en' | 'ru'>('en');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -600,6 +602,12 @@ export default function ChatView({
                         </div>
                         <h1 className="font-bold text-xl tracking-tight">Dory<span className="text-blue-600">Chat</span></h1>
                     </div>
+                    <button
+                        className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
+                        onClick={() => setShowSettings(!showSettings)}
+                    >
+                        <Settings className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* Search & Actions */}
@@ -780,6 +788,63 @@ export default function ChatView({
                     </div>
                 </div>
             </aside>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    onClick={() => setShowSettings(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-6 w-96"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h2>
+                            <button
+                                onClick={() => setShowSettings(false)}
+                                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                            >
+                                <span className="text-zinc-500 text-xl">×</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+                                    Language
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setLanguage('en');
+                                            setShowSettings(false);
+                                        }}
+                                        className={`p-3 rounded-xl font-medium transition-all ${language === 'en'
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                            }`}
+                                    >
+                                        🇬🇧 English
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setLanguage('ru');
+                                            setShowSettings(false);
+                                        }}
+                                        className={`p-3 rounded-xl font-medium transition-all ${language === 'ru'
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                            }`}
+                                    >
+                                        🇷🇺 Русский
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Chat Area */}
             <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative">
