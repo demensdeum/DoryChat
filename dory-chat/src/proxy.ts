@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     // Check if the session cookie exists
     let sessionId = request.cookies.get('dory_session')?.value;
     let isNewSession = false;

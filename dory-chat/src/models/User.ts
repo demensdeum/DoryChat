@@ -38,10 +38,6 @@ const UserSchema = new Schema<IUser>({
     },
 });
 
-// Helper to prevent overwriting models during hot reload
-if (process.env.NODE_ENV === 'development' && mongoose.models.User) {
-    delete mongoose.models.User;
-}
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

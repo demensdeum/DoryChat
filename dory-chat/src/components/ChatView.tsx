@@ -721,7 +721,7 @@ export default function ChatView({
                 {/* User Profile Mini */}
                 <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 shrink-0 overflow-hidden">
-                        <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
+                        {currentUser.avatar && <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate text-zinc-900 dark:text-zinc-100">{currentUser.name}</p>

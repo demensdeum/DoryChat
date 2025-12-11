@@ -1,6 +1,9 @@
 import ChatView from "@/components/ChatView";
 import { cookies, headers } from "next/headers";
 import connectToDatabase from "@/lib/db";
+// Import Room and Message first, before User, to ensure they're registered
+import Room from "@/models/Room";
+import Message from "@/models/Message";
 import User from "@/models/User";
 
 export default async function Home() {
@@ -78,9 +81,13 @@ export default async function Home() {
       }
 
     } catch (error) {
-      console.error("Database Error:", error);
+      console.error("Database Connection Failed:", error instanceof Error ? error.message : error);
       // Fallback for DB errors
-      user = { name: "Guest (Offline)", avatar: "", id: "offline" };
+      user = {
+        name: "Guest (Offline)",
+        avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=offline`,
+        id: "offline"
+      };
       contacts = [];
     }
   }

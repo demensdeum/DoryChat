@@ -28,10 +28,6 @@ const RoomSchema = new Schema<IRoom>({
     }
 });
 
-// Helper to prevent overwriting models during hot reload
-if (process.env.NODE_ENV === 'development' && mongoose.models.Room) {
-    delete mongoose.models.Room;
-}
 
 const Room: Model<IRoom> = mongoose.models.Room || mongoose.model<IRoom>('Room', RoomSchema);
 
