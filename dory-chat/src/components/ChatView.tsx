@@ -552,19 +552,21 @@ export default function ChatView({
 
     // Helper to calculate animation style
     const getExpirationStyle = (createdAt: Date) => {
-        const TTL = 60 * 1000; // 60 seconds
+        const TTL = 60 * 1000; // 60 seconds total
+        const FADE_START = 59 * 1000; // Start fading at 59 seconds
         const elapsed = Date.now() - createdAt.getTime();
 
         // If expired, hidden
-        if (elapsed >= TTL) return { opacity: 0 };
+        if (elapsed >= TTL) return { opacity: 0, display: 'none' };
 
-        // Continuous fade out over 60s
-        // Start at opacity 1, end at opacity 0
-        // We "start" the animation in the past based on how old the message is
-        return {
-            animation: `fadeOut ${TTL}ms linear forwards`,
-            animationDelay: `-${elapsed}ms`
-        };
+        // If in the last 1 second, fade out quickly
+        if (elapsed >= FADE_START) {
+            const fadeProgress = (elapsed - FADE_START) / (TTL - FADE_START);
+            return { opacity: 1 - fadeProgress, transition: 'opacity 0.3s ease-out' };
+        }
+
+        // Otherwise, full opacity
+        return { opacity: 1 };
     };
 
 
