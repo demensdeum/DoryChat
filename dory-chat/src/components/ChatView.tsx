@@ -678,7 +678,7 @@ export default function ChatView({
 
     // Helper function to get room status
     const getRoomStatus = (contact: any) => {
-        if (!contact || contact.type !== 'room') return null;
+        if (!contact || contact.type !== 'room') return { text: null, isReady: false };
         
         const participants = contact.participants || [];
         const hasEnoughParticipants = participants.length >= 2;
@@ -687,9 +687,9 @@ export default function ChatView({
         // For sidebar, we check if room is ready (we can't check privateKeyAvailable for all rooms)
         // So we'll show status based on participants and public keys
         if (hasEnoughParticipants && allHavePublicKeys) {
-            return t('e2eeSecure');
+            return { text: t('e2eeSecure'), isReady: true };
         } else {
-            return t('waitingForTalker');
+            return { text: t('waitingForTalker'), isReady: false };
         }
     };
 
@@ -796,9 +796,15 @@ export default function ChatView({
                                             alt={contact.name}
                                             className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-800 object-cover"
                                         />
-                                        {contact.status === "online" && (
+                                        {contact.status === "online" && contact.type !== 'room' && (
                                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full" />
                                         )}
+                                        {contact.type === 'room' && (() => {
+                                            const status = getRoomStatus(contact);
+                                            return (
+                                                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-950 ${status.isReady ? 'bg-green-500' : 'bg-amber-500'} animate-pulse`} />
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="flex-1 text-left min-w-0">
@@ -814,7 +820,20 @@ export default function ChatView({
                                         </div>
                                         <p className={`text-sm truncate ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
                                             }`}>
-                                            {contact.type === 'room' ? (getRoomStatus(contact) || contact.lastMessage) : contact.lastMessage}
+                                            {contact.type === 'room' ? (() => {
+                                                const status = getRoomStatus(contact);
+                                                if (status.text) {
+                                                    return (
+                                                        <span className={`text-[10px] ${status.isReady 
+                                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                                                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                                        } px-2 py-0.5 rounded-full`}>
+                                                            {status.text}
+                                                        </span>
+                                                    );
+                                                }
+                                                return contact.lastMessage;
+                                            })() : contact.lastMessage}
                                         </p>
                                     </div>
 
