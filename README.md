@@ -71,13 +71,12 @@
    
    # Message Lifetime Configuration (optional)
    # Set message TTL in milliseconds (default: 60000 = 60 seconds)
-   MESSAGE_TTL_MS=60000
    NEXT_PUBLIC_MESSAGE_TTL_MS=60000
    
    # Examples:
-   # For 2 minutes: MESSAGE_TTL_MS=120000 and NEXT_PUBLIC_MESSAGE_TTL_MS=120000
-   # For 30 seconds: MESSAGE_TTL_MS=30000 and NEXT_PUBLIC_MESSAGE_TTL_MS=30000
-   # To disable expiration (messages persist indefinitely): MESSAGE_TTL_MS=0 and NEXT_PUBLIC_MESSAGE_TTL_MS=0
+   # For 2 minutes: NEXT_PUBLIC_MESSAGE_TTL_MS=120000
+   # For 30 seconds: NEXT_PUBLIC_MESSAGE_TTL_MS=30000
+   # To disable expiration (messages persist indefinitely): NEXT_PUBLIC_MESSAGE_TTL_MS=0
    ```
 
 4. **Run the development server**:
