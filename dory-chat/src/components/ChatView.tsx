@@ -926,7 +926,7 @@ export default function ChatView({
                 </div>
 
                 {/* User Profile Mini */}
-                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
+                <div className="h-[72px] border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3 px-4">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 shrink-0 overflow-hidden">
                         {currentUser.avatar && <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />}
                     </div>
@@ -1126,8 +1126,8 @@ export default function ChatView({
                         </div>
 
                         {/* Chat Input */}
-                        <div className="p-4 bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
-                            <div className="flex items-center gap-2 max-w-5xl mx-auto">
+                        <div className="h-[72px] bg-white dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 flex items-center">
+                            <div className="flex items-center gap-2 max-w-5xl mx-auto w-full px-4">
 
 
                                 <div className="flex-1 relative">
