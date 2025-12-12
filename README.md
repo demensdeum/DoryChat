@@ -74,8 +74,8 @@
    NEXT_PUBLIC_MESSAGE_TTL_MS=120000
    
    # Room Lifetime Configuration (optional)
-   # Set room TTL in milliseconds (default: 0 = rooms never expire)
-   NEXT_PUBLIC_ROOM_TTL_MS=0
+   # Set room TTL in milliseconds (default: 604800000 = 1 week)
+   NEXT_PUBLIC_ROOM_TTL_MS=604800000
    
    # Endpoint Creation Cooldown (optional)
    # Set cooldown in seconds before creating another endpoint (default: 10 seconds)

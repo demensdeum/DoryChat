@@ -2,7 +2,7 @@
  * Configuration for message and room lifetime (TTL) and cooldowns
  * Can be configured via environment variables:
  * - NEXT_PUBLIC_MESSAGE_TTL_MS: Message lifetime in milliseconds (default: 120000 = 120 seconds)
- * - NEXT_PUBLIC_ROOM_TTL_MS: Room lifetime in milliseconds (default: 0 = rooms never expire)
+ * - NEXT_PUBLIC_ROOM_TTL_MS: Room lifetime in milliseconds (default: 604800000 = 1 week)
  * - NEXT_PUBLIC_ENDPOINT_CREATION_COOLDOWN_SECONDS: Endpoint creation cooldown in seconds (default: 10 seconds)
  * - NEXT_PUBLIC_MESSAGE_SEND_COOLDOWN_SECONDS: Message send cooldown in seconds (default: 2 seconds)
  * 
@@ -40,7 +40,7 @@ export const CLIENT_MESSAGE_FADE_START_MS = MESSAGE_FADE_START_MS;
 // If TTL <= 0, rooms will never expire
 export const ROOM_TTL_MS = parseEnvInt(
     process.env.NEXT_PUBLIC_ROOM_TTL_MS,
-    0 // Default: rooms never expire
+    7 * 24 * 60 * 60 * 1000 // Default: 1 week (604800000 ms)
 );
 
 // Endpoint creation cooldown (used in client-side)
