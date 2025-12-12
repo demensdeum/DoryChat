@@ -14,7 +14,8 @@ import {
     Check,
     CheckCheck,
     Trash2,
-    Copy
+    Copy,
+    ArrowLeft
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import AgreementModal from './AgreementModal';
@@ -34,9 +35,19 @@ export default function ChatView({
     initialContacts?: any[];
 }) {
     const [contacts, setContacts] = useState(initialContacts.length > 0 ? initialContacts : DEFAULT_CONTACTS);
-    const [selectedContact, setSelectedContact] = useState(contacts[0]);
+    // Start with no contact selected - user will select one (works for both mobile and desktop)
+    const [selectedContact, setSelectedContact] = useState<any>(null);
     const [messageInput, setMessageInput] = useState("");
     const [messages, setMessages] = useState<any[]>([]);
+    
+    // Mobile view handlers: on mobile, show sidebar when no contact selected, show chat when contact selected
+    const handleContactSelect = (contact: any) => {
+        setSelectedContact(contact);
+    };
+    
+    const handleBackToSidebar = () => {
+        setSelectedContact(null);
+    };
 
     // Search State
     const [searchQuery, setSearchQuery] = useState("");
@@ -675,8 +686,8 @@ export default function ChatView({
         <div className="flex h-screen w-full bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 overflow-hidden font-sans">
             <AgreementModal />
 
-            {/* Sidebar */}
-            <aside className="w-80 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-950/50 backdrop-blur-xl">
+            {/* Sidebar - Fullscreen on mobile when no contact selected, sidebar on desktop */}
+            <aside className={`${selectedContact ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-zinc-200 dark:border-zinc-800 flex-col bg-white dark:bg-zinc-950/50 backdrop-blur-xl`}>
                 {/* ... Sidebar content unchanged ... */}
                 <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-transparent z-10">
                     <div className="flex items-center gap-2">
@@ -746,7 +757,7 @@ export default function ChatView({
                             contacts.map((contact) => (
                                 <button
                                     key={contact.id}
-                                    onClick={() => setSelectedContact(contact)}
+                                    onClick={() => handleContactSelect(contact)}
                                     className={`w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-200 ${selectedContact?.id === contact.id
                                         ? "bg-blue-600 shadow-md shadow-blue-500/20"
                                         : "hover:bg-zinc-100 dark:hover:bg-zinc-900"
@@ -952,8 +963,8 @@ export default function ChatView({
                 </div>
             )}
 
-            {/* Main Chat Area */}
-            <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-zinc-950 relative">
+            {/* Main Chat Area - Fullscreen on mobile when contact selected, normal on desktop */}
+            <main className={`${selectedContact ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 bg-white dark:bg-zinc-950 relative`}>
 
                 {/* Chat Header or Empty State */}
                 {!selectedContact ? (
@@ -970,6 +981,14 @@ export default function ChatView({
                     <>
                         <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
                             <div className="flex items-center gap-4">
+                                {/* Back button - visible only on mobile */}
+                                <button
+                                    onClick={handleBackToSidebar}
+                                    className="md:hidden p-2 -ml-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
+                                    aria-label="Back to rooms"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
                                 <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-bold overflow-hidden">
                                     {selectedContact.type === 'room' ? (
                                         <div className="text-xs text-center leading-none">
