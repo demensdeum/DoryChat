@@ -77,6 +77,10 @@
    # Set room TTL in milliseconds (default: 0 = rooms never expire)
    NEXT_PUBLIC_ROOM_TTL_MS=0
    
+   # Endpoint Creation Cooldown (optional)
+   # Set cooldown in seconds before creating another endpoint (default: 10 seconds)
+   NEXT_PUBLIC_ENDPOINT_CREATION_COOLDOWN_SECONDS=10
+   
    # Examples:
    # Messages: 2 minutes: NEXT_PUBLIC_MESSAGE_TTL_MS=120000
    # Messages: 30 seconds: NEXT_PUBLIC_MESSAGE_TTL_MS=30000

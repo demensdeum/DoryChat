@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import AgreementModal from './AgreementModal';
-import { CLIENT_MESSAGE_TTL_MS, CLIENT_MESSAGE_FADE_START_MS } from "@/lib/config";
+import { CLIENT_MESSAGE_TTL_MS, CLIENT_MESSAGE_FADE_START_MS, ENDPOINT_CREATION_COOLDOWN_SECONDS } from "@/lib/config";
 
 // Default contacts removed to prevent confusion
 // Use empty array if no contacts provided
@@ -94,7 +94,7 @@ export default function ChatView({
             errorRoomNotFound: 'Room not found or is full',
             backToRooms: 'Back to rooms',
             copyCode: 'Copy Code',
-            alertCooldown: 'Please wait 30 seconds before creating another endpoint.',
+            alertCooldown: 'Please wait {seconds} seconds before creating another endpoint.',
             alertNoPrivateKey: 'No Private Key found for this room! You might have cleared your cache.',
             messagingCooldownPlaceholder: 'Messaging cooldown'
         },
@@ -127,7 +127,7 @@ export default function ChatView({
             errorRoomNotFound: 'Комната не найдена или заполнена',
             backToRooms: 'Вернуться к списку комнат',
             copyCode: 'Скопировать код',
-            alertCooldown: 'Пожалуйста, подождите 30 секунд перед созданием новой точки.',
+            alertCooldown: 'Пожалуйста, подождите {seconds} секунд перед созданием новой точки.',
             alertNoPrivateKey: 'Приватный ключ для этой комнаты не найден! Возможно, вы очистили кэш.',
             messagingCooldownPlaceholder: 'Задержка отправки'
         }
@@ -416,14 +416,14 @@ export default function ChatView({
     // Handle Create Room
     const handleCreateRoom = async () => {
         if (isCreateCoolingDown) {
-            alert(t('alertCooldown'));
+            alert(t('alertCooldown').replace('{seconds}', ENDPOINT_CREATION_COOLDOWN_SECONDS.toString()));
             return;
         }
 
         try {
             // Apply Rate Limit
             setIsCreateCoolingDown(true);
-            setCreateCooldownSeconds(30);
+            setCreateCooldownSeconds(ENDPOINT_CREATION_COOLDOWN_SECONDS);
 
             const interval = setInterval(() => {
                 setCreateCooldownSeconds(prev => {
