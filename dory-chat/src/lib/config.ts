@@ -4,6 +4,7 @@
  * - NEXT_PUBLIC_MESSAGE_TTL_MS: Message lifetime in milliseconds (default: 60000 = 60 seconds)
  * - NEXT_PUBLIC_ROOM_TTL_MS: Room lifetime in milliseconds (default: 0 = rooms never expire)
  * - NEXT_PUBLIC_ENDPOINT_CREATION_COOLDOWN_SECONDS: Endpoint creation cooldown in seconds (default: 10 seconds)
+ * - NEXT_PUBLIC_MESSAGE_SEND_COOLDOWN_SECONDS: Message send cooldown in seconds (default: 2 seconds)
  * 
  * Special values:
  * - TTL <= 0: Messages/rooms will never expire and will persist indefinitely
@@ -47,5 +48,12 @@ export const ROOM_TTL_MS = parseEnvInt(
 export const ENDPOINT_CREATION_COOLDOWN_SECONDS = parseEnvInt(
     process.env.NEXT_PUBLIC_ENDPOINT_CREATION_COOLDOWN_SECONDS,
     10 // Default: 10 seconds
+);
+
+// Message send cooldown (used in client-side)
+// Cooldown period in seconds before sending another message
+export const MESSAGE_SEND_COOLDOWN_SECONDS = parseEnvInt(
+    process.env.NEXT_PUBLIC_MESSAGE_SEND_COOLDOWN_SECONDS,
+    2 // Default: 2 seconds
 );
 

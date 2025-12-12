@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import AgreementModal from './AgreementModal';
-import { CLIENT_MESSAGE_TTL_MS, CLIENT_MESSAGE_FADE_START_MS, ENDPOINT_CREATION_COOLDOWN_SECONDS } from "@/lib/config";
+import { CLIENT_MESSAGE_TTL_MS, CLIENT_MESSAGE_FADE_START_MS, ENDPOINT_CREATION_COOLDOWN_SECONDS, MESSAGE_SEND_COOLDOWN_SECONDS } from "@/lib/config";
 
 // Default contacts removed to prevent confusion
 // Use empty array if no contacts provided
@@ -541,7 +541,7 @@ export default function ChatView({
 
         // Rate Limit
         setIsCoolingDown(true);
-        setMessageCooldownSeconds(3);
+        setMessageCooldownSeconds(MESSAGE_SEND_COOLDOWN_SECONDS);
 
         const interval = setInterval(() => {
             setMessageCooldownSeconds(prev => {

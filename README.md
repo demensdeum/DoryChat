@@ -81,6 +81,10 @@
    # Set cooldown in seconds before creating another endpoint (default: 10 seconds)
    NEXT_PUBLIC_ENDPOINT_CREATION_COOLDOWN_SECONDS=10
    
+   # Message Send Cooldown (optional)
+   # Set cooldown in seconds before sending another message (default: 2 seconds)
+   NEXT_PUBLIC_MESSAGE_SEND_COOLDOWN_SECONDS=2
+   
    # Examples:
    # Messages: 2 minutes: NEXT_PUBLIC_MESSAGE_TTL_MS=120000
    # Messages: 30 seconds: NEXT_PUBLIC_MESSAGE_TTL_MS=30000
