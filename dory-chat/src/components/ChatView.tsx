@@ -676,6 +676,23 @@ export default function ChatView({
     };
 
 
+    // Helper function to get room status
+    const getRoomStatus = (contact: any) => {
+        if (!contact || contact.type !== 'room') return null;
+        
+        const participants = contact.participants || [];
+        const hasEnoughParticipants = participants.length >= 2;
+        const allHavePublicKeys = participants.every((p: any) => p.publicKey);
+        
+        // For sidebar, we check if room is ready (we can't check privateKeyAvailable for all rooms)
+        // So we'll show status based on participants and public keys
+        if (hasEnoughParticipants && allHavePublicKeys) {
+            return t('e2eeSecure');
+        } else {
+            return t('waitingForTalker');
+        }
+    };
+
     // E2EE Status Check
     const secureConnectionReady = (() => {
         if (!selectedContact) return false;
@@ -797,7 +814,7 @@ export default function ChatView({
                                         </div>
                                         <p className={`text-sm truncate ${selectedContact?.id === contact.id ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"
                                             }`}>
-                                            {contact.lastMessage}
+                                            {contact.type === 'room' ? (getRoomStatus(contact) || contact.lastMessage) : contact.lastMessage}
                                         </p>
                                     </div>
 
