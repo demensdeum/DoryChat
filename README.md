@@ -70,8 +70,8 @@
    # MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/dory-chat
    
    # Message Lifetime Configuration (optional)
-   # Set message TTL in milliseconds (default: 60000 = 60 seconds)
-   NEXT_PUBLIC_MESSAGE_TTL_MS=60000
+   # Set message TTL in milliseconds (default: 120000 = 120 seconds)
+   NEXT_PUBLIC_MESSAGE_TTL_MS=120000
    
    # Room Lifetime Configuration (optional)
    # Set room TTL in milliseconds (default: 0 = rooms never expire)
