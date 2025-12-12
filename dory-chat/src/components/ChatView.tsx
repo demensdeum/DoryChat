@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import AgreementModal from './AgreementModal';
+import { CLIENT_MESSAGE_TTL_MS, CLIENT_MESSAGE_FADE_START_MS } from "@/lib/config";
 
 // Default contacts removed to prevent confusion
 // Use empty array if no contacts provided
@@ -630,14 +631,20 @@ export default function ChatView({
 
     // Helper to calculate animation style
     const getExpirationStyle = (createdAt: Date) => {
-        const TTL = 60 * 1000; // 60 seconds total
-        const FADE_START = 59 * 1000; // Start fading at 59 seconds
+        const TTL = CLIENT_MESSAGE_TTL_MS; // Configurable TTL from environment
+        const FADE_START = CLIENT_MESSAGE_FADE_START_MS; // Configurable fade start
+        
+        // If TTL is zero or less, messages never expire (persist indefinitely)
+        if (TTL <= 0) {
+            return { opacity: 1 };
+        }
+        
         const elapsed = Date.now() - createdAt.getTime();
 
         // If expired, hidden
         if (elapsed >= TTL) return { opacity: 0, display: 'none' };
 
-        // If in the last 1 second, fade out quickly
+        // If in the fade period, fade out quickly
         if (elapsed >= FADE_START) {
             const fadeProgress = (elapsed - FADE_START) / (TTL - FADE_START);
             return { opacity: 1 - fadeProgress, transition: 'opacity 0.3s ease-out' };

@@ -12,9 +12,10 @@
 - **Web Crypto API**: All cryptographic operations use the browser's native `window.crypto.subtle`
 
 ### **Ephemeral Messaging**
-- **60-Second TTL**: Messages automatically expire and are deleted from the database after 1 minute
-- **Continuous Fade-Out**: Visual opacity animation shows message age in real-time
-- **Backend-Managed Cleanup**: Lazy deletion on every API request ensures no persistent storage
+- **Configurable TTL**: Messages automatically expire and are deleted from the database after a configurable time (default: 60 seconds)
+- **Persistent Mode**: Set TTL to 0 or less to disable expiration - messages will persist indefinitely
+- **Continuous Fade-Out**: Visual opacity animation shows message age in real-time (disabled when TTL <= 0)
+- **Backend-Managed Cleanup**: Lazy deletion on every API request ensures no persistent storage (skipped when TTL <= 0)
 
 ### **Private Endpoints**
 - **Room-Based Communication**: Create or join secure chat rooms using unique 6-character codes
@@ -67,6 +68,16 @@
    MONGODB_URI=mongodb://localhost:27017/dory-chat
    # Or use MongoDB Atlas:
    # MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/dory-chat
+   
+   # Message Lifetime Configuration (optional)
+   # Set message TTL in milliseconds (default: 60000 = 60 seconds)
+   MESSAGE_TTL_MS=60000
+   NEXT_PUBLIC_MESSAGE_TTL_MS=60000
+   
+   # Examples:
+   # For 2 minutes: MESSAGE_TTL_MS=120000 and NEXT_PUBLIC_MESSAGE_TTL_MS=120000
+   # For 30 seconds: MESSAGE_TTL_MS=30000 and NEXT_PUBLIC_MESSAGE_TTL_MS=30000
+   # To disable expiration (messages persist indefinitely): MESSAGE_TTL_MS=0 and NEXT_PUBLIC_MESSAGE_TTL_MS=0
    ```
 
 4. **Run the development server**:
@@ -101,7 +112,7 @@
 ### Message Lifecycle
 1. **Sent**: Message is created and stored in MongoDB
 2. **Delivered**: Another participant fetches the message (double-tick indicator)
-3. **Expired**: After 60 seconds, the message is deleted from the database
+3. **Expired**: After the configured TTL (default: 60 seconds), the message is deleted from the database
 
 ---
 
@@ -177,7 +188,7 @@
 - **Client-Side Encryption**: All encryption/decryption happens in the browser
 - **No Server Access to Keys**: The server never sees private keys or plaintext messages
 - **IndexedDB Storage**: Private keys are stored securely in the browser's IndexedDB (not `localStorage`)
-- **Ephemeral by Design**: Messages are automatically deleted after 60 seconds
+- **Ephemeral by Design**: Messages are automatically deleted after a configurable TTL (default: 60 seconds)
 - **Rate Limiting**: Prevents spam and abuse
 
 ### ⚠️ Important Notes

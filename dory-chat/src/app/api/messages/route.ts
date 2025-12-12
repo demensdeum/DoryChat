@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import { Message } from "@/models";
+import { MESSAGE_TTL_MS } from "@/lib/config";
 
 export async function GET(request: Request) {
     try {
@@ -17,8 +18,11 @@ export async function GET(request: Request) {
         await connectToDatabase();
 
         // Cleanup old messages (Backend Managed TTL)
-        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-        await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
+        // Skip cleanup if TTL is zero or less (messages persist indefinitely)
+        if (MESSAGE_TTL_MS > 0) {
+            const expirationTime = new Date(Date.now() - MESSAGE_TTL_MS);
+            await Message.deleteMany({ createdAt: { $lt: expirationTime } });
+        }
 
         if (type === 'room') {
             // Mark messages in this room as delivered if retrieved by someone other than the sender
@@ -75,8 +79,11 @@ export async function POST(request: Request) {
         await connectToDatabase();
 
         // Cleanup old messages (Backend Managed TTL)
-        const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-        await Message.deleteMany({ createdAt: { $lt: oneMinuteAgo } });
+        // Skip cleanup if TTL is zero or less (messages persist indefinitely)
+        if (MESSAGE_TTL_MS > 0) {
+            const expirationTime = new Date(Date.now() - MESSAGE_TTL_MS);
+            await Message.deleteMany({ createdAt: { $lt: expirationTime } });
+        }
 
         const newMessage = await Message.create({
             senderId,
