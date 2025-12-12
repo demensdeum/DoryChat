@@ -1,10 +1,11 @@
 /**
- * Configuration for message lifetime (TTL)
- * Can be configured via environment variable:
+ * Configuration for message and room lifetime (TTL)
+ * Can be configured via environment variables:
  * - NEXT_PUBLIC_MESSAGE_TTL_MS: Message lifetime in milliseconds (default: 60000 = 60 seconds)
+ * - NEXT_PUBLIC_ROOM_TTL_MS: Room lifetime in milliseconds (default: 0 = rooms never expire)
  * 
  * Special values:
- * - TTL <= 0: Messages will never expire and will persist indefinitely
+ * - TTL <= 0: Messages/rooms will never expire and will persist indefinitely
  * 
  * Note: NEXT_PUBLIC_ prefix is required for Next.js to expose the variable to both server and client code.
  */
@@ -32,4 +33,11 @@ export const CLIENT_MESSAGE_TTL_MS = MESSAGE_TTL_MS;
 // Only calculated if TTL > 0, otherwise set to a very large value to prevent fading
 export const MESSAGE_FADE_START_MS = MESSAGE_TTL_MS > 0 ? MESSAGE_TTL_MS - 1000 : Number.MAX_SAFE_INTEGER;
 export const CLIENT_MESSAGE_FADE_START_MS = MESSAGE_FADE_START_MS;
+
+// Room TTL (used in server-side API routes)
+// If TTL <= 0, rooms will never expire
+export const ROOM_TTL_MS = parseEnvInt(
+    process.env.NEXT_PUBLIC_ROOM_TTL_MS,
+    0 // Default: rooms never expire
+);
 

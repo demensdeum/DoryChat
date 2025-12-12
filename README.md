@@ -73,10 +73,17 @@
    # Set message TTL in milliseconds (default: 60000 = 60 seconds)
    NEXT_PUBLIC_MESSAGE_TTL_MS=60000
    
+   # Room Lifetime Configuration (optional)
+   # Set room TTL in milliseconds (default: 0 = rooms never expire)
+   NEXT_PUBLIC_ROOM_TTL_MS=0
+   
    # Examples:
-   # For 2 minutes: NEXT_PUBLIC_MESSAGE_TTL_MS=120000
-   # For 30 seconds: NEXT_PUBLIC_MESSAGE_TTL_MS=30000
-   # To disable expiration (messages persist indefinitely): NEXT_PUBLIC_MESSAGE_TTL_MS=0
+   # Messages: 2 minutes: NEXT_PUBLIC_MESSAGE_TTL_MS=120000
+   # Messages: 30 seconds: NEXT_PUBLIC_MESSAGE_TTL_MS=30000
+   # Messages: disable expiration: NEXT_PUBLIC_MESSAGE_TTL_MS=0
+   # Rooms: expire after 1 hour: NEXT_PUBLIC_ROOM_TTL_MS=3600000
+   # Rooms: expire after 24 hours: NEXT_PUBLIC_ROOM_TTL_MS=86400000
+   # Rooms: never expire (default): NEXT_PUBLIC_ROOM_TTL_MS=0
    ```
 
 4. **Run the development server**:
