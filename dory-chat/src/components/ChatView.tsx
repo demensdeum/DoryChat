@@ -1025,7 +1025,7 @@ export default function ChatView({
                     </div>
                 ) : (
                     <>
-                        <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
+                        <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-6 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10" style={{ marginTop: '5px' }}>
                             <div className="flex items-center gap-4">
                                 {/* Back button - visible only on mobile */}
                                 <button
