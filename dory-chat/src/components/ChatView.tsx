@@ -91,7 +91,12 @@ export default function ChatView({
             encryptionEnabled: 'Encryption Enabled',
             id: 'ID',
             errorEmptyCode: 'Please enter an endpoint code',
-            errorRoomNotFound: 'Room not found or is full'
+            errorRoomNotFound: 'Room not found or is full',
+            backToRooms: 'Back to rooms',
+            copyCode: 'Copy Code',
+            alertCooldown: 'Please wait 30 seconds before creating another endpoint.',
+            alertNoPrivateKey: 'No Private Key found for this room! You might have cleared your cache.',
+            messagingCooldownPlaceholder: 'Messaging cooldown'
         },
         ru: {
             appName: 'DoryChat',
@@ -119,7 +124,12 @@ export default function ChatView({
             encryptionEnabled: 'Шифрование включено',
             id: 'ID',
             errorEmptyCode: 'Введите код точки',
-            errorRoomNotFound: 'Комната не найдена или заполнена'
+            errorRoomNotFound: 'Комната не найдена или заполнена',
+            backToRooms: 'Вернуться к списку комнат',
+            copyCode: 'Скопировать код',
+            alertCooldown: 'Пожалуйста, подождите 30 секунд перед созданием новой точки.',
+            alertNoPrivateKey: 'Приватный ключ для этой комнаты не найден! Возможно, вы очистили кэш.',
+            messagingCooldownPlaceholder: 'Задержка отправки'
         }
     };
 
@@ -406,7 +416,7 @@ export default function ChatView({
     // Handle Create Room
     const handleCreateRoom = async () => {
         if (isCreateCoolingDown) {
-            alert("Please wait 30 seconds before creating another endpoint.");
+            alert(t('alertCooldown'));
             return;
         }
 
@@ -553,7 +563,7 @@ export default function ChatView({
                 // 1. Get my Private Key
                 const myKey = await getPrivateKey(selectedContact.id);
                 if (!myKey) {
-                    alert("No Private Key found for this room! You might have cleared your cache.");
+                    alert(t('alertNoPrivateKey'));
                     return;
                 }
 
@@ -985,7 +995,7 @@ export default function ChatView({
                                 <button
                                     onClick={handleBackToSidebar}
                                     className="md:hidden p-2 -ml-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
-                                    aria-label="Back to rooms"
+                                    aria-label={t('backToRooms')}
                                 >
                                     <ArrowLeft className="w-5 h-5" />
                                 </button>
@@ -1009,7 +1019,7 @@ export default function ChatView({
                                                     setTimeout(() => setCopied(false), 2000);
                                                 }}
                                                 className="p-1 text-zinc-400 hover:text-blue-500 transition-colors"
-                                                title="Copy Code"
+                                                title={t('copyCode')}
                                             >
                                                 {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                                             </button>
@@ -1025,8 +1035,8 @@ export default function ChatView({
                                     </h2>
                                     <p className="text-xs text-zinc-500">
                                         {selectedContact.type === 'room'
-                                            ? `${selectedContact.participants?.length || 1} Participants`
-                                            : 'Active now'
+                                            ? `${selectedContact.participants?.length || 1} ${t('participants')}`
+                                            : t('activeNow')
                                         }
                                     </p>
                                 </div>
@@ -1040,7 +1050,7 @@ export default function ChatView({
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800 bg-slate-50 dark:bg-black/50">
                             {/* Date separator */}
                             <div className="flex justify-center">
-                                <span className="text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full">Today</span>
+                                <span className="text-xs font-medium text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full">{t('today')}</span>
                             </div>
 
                             {messages.map((msg) => (
@@ -1092,8 +1102,8 @@ export default function ChatView({
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && secureConnectionReady && !isCoolingDown && handleSendMessage()}
                                         placeholder={secureConnectionReady
-                                            ? (isCoolingDown ? `Messaging cooldown (${messageCooldownSeconds}s)...` : "Type a secured message...")
-                                            : "Waiting for secure connection (2+ participants)..."
+                                            ? (isCoolingDown ? `${t('messagingCooldownPlaceholder')} (${messageCooldownSeconds}s)...` : t('typeMessage'))
+                                            : t('waitingConnection')
                                         }
                                         disabled={!secureConnectionReady || isCoolingDown}
                                         className={`w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl py-3 pl-4 pr-16 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${!secureConnectionReady || isCoolingDown ? 'opacity-50 cursor-not-allowed' : ''
