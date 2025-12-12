@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         const newRoom = await Room.create({
             code,
             participants: [{ user: userId, publicKey }],
-            name: `Room ${code}`
+            name: code
         });
 
         // Add to user's room list
