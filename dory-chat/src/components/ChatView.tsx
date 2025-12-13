@@ -109,7 +109,10 @@ export default function ChatView({
             copyCode: 'Copy Code',
             alertCooldown: 'Please wait {seconds} seconds before creating another endpoint.',
             alertNoPrivateKey: 'No Private Key found for this room! You might have cleared your cache.',
-            messagingCooldownPlaceholder: 'Messaging cooldown'
+            messagingCooldownPlaceholder: 'Messaging cooldown',
+            justNow: 'Just now',
+            guest: 'Guest',
+            online: 'online'
         },
         ru: {
             appName: 'DoryChat',
@@ -142,14 +145,17 @@ export default function ChatView({
             copyCode: 'Скопировать код',
             alertCooldown: 'Пожалуйста, подождите {seconds} секунд перед созданием новой точки.',
             alertNoPrivateKey: 'Приватный ключ для этой комнаты не найден! Возможно, вы очистили кэш.',
-            messagingCooldownPlaceholder: 'Задержка отправки'
+            messagingCooldownPlaceholder: 'Задержка отправки',
+            justNow: 'Только что',
+            guest: 'Гость',
+            online: 'в сети'
         }
     };
 
     const t = (key: keyof typeof translations.en) => translations[language][key];
 
     const currentUser = user || {
-        name: "Guest",
+        name: t('guest'),
         avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${sessionId}`,
         id: "guest"
     };
@@ -470,10 +476,10 @@ export default function ChatView({
                     id: room._id,
                     name: `${room.code}`,
                     avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
-                    status: 'online',
+                    status: t('online'),
                     unread: 0,
-                    lastMessage: 'Encryption Enabled',
-                    time: 'Just now',
+                    lastMessage: t('encryptionEnabled'),
+                    time: t('justNow'),
                     type: 'room',
                     code: room.code,
                     participants: room.participants
@@ -514,10 +520,10 @@ export default function ChatView({
                     id: room._id,
                     name: `${room.code}`,
                     avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${room.code}`,
-                    status: 'online',
+                    status: t('online'),
                     unread: 0,
-                    lastMessage: 'Encryption Enabled',
-                    time: 'Just now',
+                    lastMessage: t('encryptionEnabled'),
+                    time: t('justNow'),
                     type: 'room',
                     code: room.code,
                     participants: room.participants
@@ -809,7 +815,7 @@ export default function ChatView({
                                             alt={contact.name}
                                             className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-800 object-cover"
                                         />
-                                        {contact.status === "online" && contact.type !== 'room' && (
+                                        {contact.status === t('online') && contact.type !== 'room' && (
                                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full" />
                                         )}
                                         {contact.type === 'room' && (() => {
@@ -1031,9 +1037,9 @@ export default function ChatView({
                         <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
                             <MessageSquare className="w-10 h-10" />
                         </div>
-                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Secure Endpoints</h2>
+                        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{t('secureEndpoints')}</h2>
                         <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
-                            Create a Private Endpoint or enter a code to Join one. Share your code to start a secure, encrypted chat.
+                            {t('secureEndpointsDesc')}
                         </p>
                     </div>
                 ) : (
