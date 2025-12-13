@@ -15,6 +15,12 @@ const AgreementModal = () => {
     const savedLanguage = localStorage.getItem('dorychat-language') as 'en' | 'ru';
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
       setLanguage(savedLanguage);
+    } else {
+      // Detect language from user agent for first-time users
+      const browserLanguage = typeof navigator !== 'undefined' ? (navigator.language || navigator.languages?.[0] || 'en') : 'en';
+      const detectedLanguage = browserLanguage.toLowerCase().startsWith('ru') ? 'ru' : 'en';
+      setLanguage(detectedLanguage);
+      localStorage.setItem('dorychat-language', detectedLanguage);
     }
   }, []);
 

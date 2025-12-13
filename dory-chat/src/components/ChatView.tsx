@@ -63,11 +63,17 @@ export default function ChatView({
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Load language preference from localStorage on mount
+    // Load language preference from localStorage on mount, or detect from user agent
     useEffect(() => {
         const savedLanguage = localStorage.getItem('dorychat-language') as 'en' | 'ru';
         if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
             setLanguage(savedLanguage);
+        } else {
+            // Detect language from user agent for first-time users
+            const browserLanguage = navigator.language || navigator.languages?.[0] || 'en';
+            const detectedLanguage = browserLanguage.toLowerCase().startsWith('ru') ? 'ru' : 'en';
+            setLanguage(detectedLanguage);
+            localStorage.setItem('dorychat-language', detectedLanguage);
         }
     }, []);
 
