@@ -54,6 +54,12 @@ export default function ChatView({
         return `${basePath}${path}`;
     };
 
+    // Helper function to get the correct asset path with base path
+    const getAssetPath = (path: string) => {
+        const basePath = process.env.NODE_ENV === 'production' ? '/dorychat-app' : '';
+        return `${basePath}${path}`;
+    };
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Load language preference from localStorage on mount, or detect from user agent
@@ -737,7 +743,7 @@ export default function ChatView({
                 <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-transparent z-10">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 flex items-center justify-center">
-                            <img src="/dory-icon.png" alt="Logo" className="w-full h-full object-cover" />
+                            <img src={getAssetPath("/dory-icon.png")} alt="Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="font-bold text-xl tracking-tight">Dory<span className="text-blue-600">Chat</span></h1>
                     </div>
