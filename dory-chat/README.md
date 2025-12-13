@@ -25,6 +25,14 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 A ready-to-use Docker image is available on Docker Hub:
 [https://hub.docker.com/r/demensdeum/dorychat-app](https://hub.docker.com/r/demensdeum/dorychat-app)
 
+### Docker Run Command
+
+```bash
+sudo docker run -d --name dorychat-app --restart on-failure -p 3000:3000 demensdeum/dorychat-app:latest
+```
+
+**Important**: Before running the application, ensure you have HTTPS configured. The application requires HTTPS for secure operation, especially for encryption features to work properly in production environments.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

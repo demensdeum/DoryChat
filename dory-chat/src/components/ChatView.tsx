@@ -63,6 +63,19 @@ export default function ChatView({
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Load language preference from localStorage on mount
+    useEffect(() => {
+        const savedLanguage = localStorage.getItem('dorychat-language') as 'en' | 'ru';
+        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ru')) {
+            setLanguage(savedLanguage);
+        }
+    }, []);
+
+    // Save language preference to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('dorychat-language', language);
+    }, [language]);
+
     // Translations
     const translations = {
         en: {
