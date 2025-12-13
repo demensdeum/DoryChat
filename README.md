@@ -8,6 +8,13 @@
 
 ### **End-to-End Encryption (E2EE)**
 - **Hybrid Encryption**: RSA-OAEP (2048-bit) for key exchange + AES-GCM (256-bit) for message content
+   
+## 🌐 Production
+
+The application is deployed at: https://mediumdemens.vps.webdock.cloud/dorychat-app
+
+**Base Path / Base URL**: In the production build the app uses a default base path of `/dorychat-app`. This is configured in `dory-chat/next.config.js` via the `basePath` option and is applied to both API and asset paths. You can see this logic used in the code (for example, `getApiPath` and `getAssetPath` in `dory-chat/src/components/ChatView.tsx`). To deploy your instance from the site root instead, set `basePath` to an empty string in `next.config.js` and rebuild.
+
 - **Secure Key Storage**: Private keys stored as `CryptoKey` objects in IndexedDB (not exposed as strings)
 - **Web Crypto API**: All cryptographic operations use the browser's native `window.crypto.subtle`
 
