@@ -35,8 +35,20 @@ export default function ChatView({
     initialContacts?: any[];
 }) {
     const [contacts, setContacts] = useState(initialContacts.length > 0 ? initialContacts : DEFAULT_CONTACTS);
-    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-    const [messages, setMessages] = useState<Message[]>([]);
+    // Start with no contact selected - user will select one (works for both mobile and desktop)
+    const [selectedContact, setSelectedContact] = useState<any | null>(null);
+    // Search query for joining rooms and creating endpoints
+    const [searchQuery, setSearchQuery] = useState('');
+    // Copy feedback state
+    const [copied, setCopied] = useState(false);
+    // Mobile view handlers: on mobile, show sidebar when no contact selected, show chat when contact selected
+    const handleContactSelect = (contact: any) => {
+        setSelectedContact(contact);
+    };
+    const handleBackToSidebar = () => {
+        setSelectedContact(null);
+    };
+    const [messages, setMessages] = useState<any[]>([]);
     const [messageInput, setMessageInput] = useState('');
     const [isCoolingDown, setIsCoolingDown] = useState(false);
     const [privateKeyAvailable, setPrivateKeyAvailable] = useState(false);
@@ -268,8 +280,6 @@ export default function ChatView({
     }, [selectedContact, currentUser.id]);
 
     // Check for Private Key availability (Async)
-    const [privateKeyAvailable, setPrivateKeyAvailable] = useState(false);
-
     useEffect(() => {
         const checkKey = async () => {
             if (!selectedContact || selectedContact.type !== 'room') {
