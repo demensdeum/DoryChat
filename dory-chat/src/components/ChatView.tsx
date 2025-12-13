@@ -35,24 +35,11 @@ export default function ChatView({
     initialContacts?: any[];
 }) {
     const [contacts, setContacts] = useState(initialContacts.length > 0 ? initialContacts : DEFAULT_CONTACTS);
-    // Start with no contact selected - user will select one (works for both mobile and desktop)
-    const [selectedContact, setSelectedContact] = useState<any>(null);
-    const [messageInput, setMessageInput] = useState("");
-    const [messages, setMessages] = useState<any[]>([]);
-    
-    // Mobile view handlers: on mobile, show sidebar when no contact selected, show chat when contact selected
-    const handleContactSelect = (contact: any) => {
-        setSelectedContact(contact);
-    };
-    
-    const handleBackToSidebar = () => {
-        setSelectedContact(null);
-    };
-
-    // Search State
-    const [searchQuery, setSearchQuery] = useState("");
-    const [copied, setCopied] = useState(false);
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [messageInput, setMessageInput] = useState('');
     const [isCoolingDown, setIsCoolingDown] = useState(false);
+    const [privateKeyAvailable, setPrivateKeyAvailable] = useState(false);
     const [isCreateCoolingDown, setIsCreateCoolingDown] = useState(false);
     const [createCooldownSeconds, setCreateCooldownSeconds] = useState(0);
     const [messageCooldownSeconds, setMessageCooldownSeconds] = useState(0);
@@ -60,6 +47,12 @@ export default function ChatView({
     const [showSettings, setShowSettings] = useState(false);
     const [language, setLanguage] = useState<'en' | 'ru'>('en');
     const [joinError, setJoinError] = useState<string | null>(null);
+
+    // Helper function to get the correct API path with base path
+    const getApiPath = (path: string) => {
+        const basePath = process.env.NODE_ENV === 'production' ? '/dorychat-app' : '';
+        return `${basePath}${path}`;
+    };
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -180,7 +173,7 @@ export default function ChatView({
             try {
                 // If it's a room, refresh its participants (to get new Public Keys)
                 if (selectedContact.type === 'room') {
-                    const roomRes = await fetch(`/api/rooms?roomId=${selectedContact.id}`);
+                    const roomRes = await fetch(getApiPath(`/api/rooms?roomId=${selectedContact.id}`));
                     if (roomRes.ok) {
                         const roomData = await roomRes.json();
                         // Update the Ref or State silently so we have fresh keys for sending
@@ -200,7 +193,7 @@ export default function ChatView({
                 }
 
                 const typeParam = selectedContact.type === 'room' ? '&type=room' : '';
-                const res = await fetch(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}${typeParam}`);
+                const res = await fetch(getApiPath(`/api/messages?userId=${currentUser.id}&contactId=${selectedContact.id}${typeParam}`));
                 if (res.ok) {
                     const data = await res.json();
 
@@ -465,7 +458,7 @@ export default function ChatView({
             const publicKey = await exportKey(keyPair.publicKey);
 
             // Create Room
-            const res = await fetch('/api/rooms', {
+            const res = await fetch(getApiPath('/api/rooms'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: currentUser.id, publicKey })
@@ -512,7 +505,7 @@ export default function ChatView({
             const keyPair = await generateKeyPair();
             const publicKey = await exportKey(keyPair.publicKey);
 
-            const res = await fetch('/api/rooms/join', {
+            const res = await fetch(getApiPath('/api/rooms/join'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: currentUser.id, code: searchQuery, publicKey })
@@ -648,7 +641,7 @@ export default function ChatView({
                 type: selectedContact.type
             };
 
-            const res = await fetch('/api/messages', {
+            const res = await fetch(getApiPath('/api/messages'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -876,7 +869,7 @@ export default function ChatView({
                                                     // Long press - delete without confirmation
                                                     setLongPressingContactId(null);
                                                     try {
-                                                        const res = await fetch('/api/rooms/leave', {
+                                                        const res = await fetch(getApiPath('/api/rooms/leave'), {
                                                             method: 'POST',
                                                             headers: { 'Content-Type': 'application/json' },
                                                             body: JSON.stringify({ userId: currentUser.id, roomId: contact.id })
