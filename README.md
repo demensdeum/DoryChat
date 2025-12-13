@@ -227,6 +227,21 @@ sudo docker run -d --name dorychat-app --restart on-failure -p 3000:3000 demensd
 - **Ephemeral by Design**: Messages are automatically deleted after a configurable TTL (default: 60 seconds)
 - **Rate Limiting**: Prevents spam and abuse
 
+### ⚠️ Important Security Notice
+
+**This project was vibecoded and requires comprehensive security research and review before production use.**
+
+While the architecture implements end-to-end encryption and ephemeral messaging, the codebase was generated rapidly without formal security auditing. Critical security areas that require professional review include:
+
+- **Cryptographic Implementation**: RSA-OAEP and AES-GCM usage patterns, key generation, and storage
+- **Authentication & Authorization**: Session management and access controls
+- **Input Validation**: API endpoints and message handling
+- **Database Security**: MongoDB integration and query construction
+- **Client-Side Security**: XSS prevention, CSP implementation, and secure key handling
+- **Network Security**: HTTPS enforcement, certificate validation, and API security
+
+**Do not deploy this application in production environments without conducting a thorough security assessment by qualified security professionals.**
+
 ### ⚠️ Important Notes
 - **Key Loss**: If you clear browser data, you'll lose access to old rooms (keys are not recoverable)
 - **No Backup**: There is no key backup or recovery mechanism
