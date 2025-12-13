@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  dory-chat:
+    image: demensdeum/dorychat-app
+    container_name: dorychat-app
+    ports:
+      - "3000:3000"
+    restart: on-failure
